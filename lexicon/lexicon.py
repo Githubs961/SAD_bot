@@ -3,21 +3,23 @@ from aiogram.utils.markdown import hlink
 IOS = 'https://apps.apple.com/ru/app/happ-proxy-utility-plus/id6746188973' #Ссылка на HAPP
 ANDROID = 'https://play.google.com/store/apps/details?id=com.happproxy' #Ссылка на HAPP
 
+
+LEXICON_COMMANDS: dict[str, str] = {
+    '/start': 'Начало работы с ботом',
+    '/access': 'Получить доступ',
+    '/profile': 'Личный кабинет',
+    '/help': 'Инструкция'
+}
+
+
 LEXICON_RU: dict[str, str] = {
-    '/start': '<b>Добро пожаловать в SAD VPN !!!</b>!!!',
+    '/start': '<b>Добро пожаловать в SAD VPN !!!</b>',
     '/help': f'Для использования SAD VPN необходимо следовать инструкции.\n'
              f'1) Установите приложение Happ:\n'
              f' {hlink(title="Для Iphone",url=IOS)}\n'
              f' {hlink(title="Для Android", url=ANDROID)}',
 
-    'subscription': 'Оформите подписку на SAD VPN.',
-    'personal_account': '👤 <b>Личный кабинет</b>'
-}
-
-
-LEXICON_COMMANDS: dict[str, str] = {
-    '/start': 'Начало работы с ботом',
-    '/help': 'Инструкция'
+    'subscription': '<b>Выберите тариф для подключения</b>',
 }
 
 PLANS = {

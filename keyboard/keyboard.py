@@ -15,16 +15,16 @@ async def set_main_menu(bot: Bot):
 # Создаем объект главной клавиатуры
 keyboard = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text='🛜 Получить доступ')],
+        [KeyboardButton(text='🔐 Получить доступ')],
         [KeyboardButton(text='🏡 Личный кабинет'),KeyboardButton(text='ℹ️ Инструкция')]
 
     ],
     resize_keyboard=True,
-    is_persistent=True)
+    is_persistent=True)# Постоянно показывать клавиатуру
     # one_time_keyboard=False #Скрыть клавиатуру
 
 
-# Создание инлайн клавиатуры для Подписок
+# Создание инлайн клавиатуру для Подписок
 sub_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text='7 дней  49 ₽', callback_data='sub_1w')],
@@ -41,5 +41,15 @@ def pay_keyboard(plan: str):
             [InlineKeyboardButton(text="💳 СБП", callback_data=f"paysbp_{plan}")],
             [InlineKeyboardButton(text="⭐ Telegram Stars", callback_data=f"pay_{plan}")],
             [InlineKeyboardButton(text="⬅️ Назад", callback_data="back")]
+        ]
+    )
+
+
+# Инлайн клавиатура - Личный кабинет
+def profile_keyboard(sub_url):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📲 Подключить устройство", callback_data="add_device",url=sub_url)],
+            [InlineKeyboardButton(text="📱 Мои устройства", callback_data="my_devices")]
         ]
     )
