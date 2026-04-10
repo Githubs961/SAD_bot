@@ -13,7 +13,7 @@ from remnawave.models import (UsersResponseDto,
                               CreateInternalSquadRequestDto,
                               TelegramUserResponseDto,
                               HwidUserDeviceDto,
-                              GetUserHwidDevicesResponseDto)
+                              GetUserHwidDevicesResponseDto, UpdateUserRequestDto)
 
 
 load_dotenv()  # вызов переменных окружения, файл ".env"
@@ -60,11 +60,11 @@ user_cache: Dict[str, Dict] = {}
 cache_time: Dict[str, float] = {}
 locks: Dict[str, asyncio.Lock] = {}  # защита от одновременной записи
 
-TTL_SECONDS = 180 # 3 минуты — хранится кэш
+TTL_SECONDS = 120 # 2 минуты — хранится кэш
 
 
 # Функция для очистки кэша (можно вызывать после создания/продления подписки)
-async def delete_user_cache(telegram_id: str):
+async def invalidate_user_cache(telegram_id: str):
     lock = locks.setdefault(telegram_id,asyncio.Lock())
     async with lock:
         user_cache.pop(telegram_id, None)
@@ -93,7 +93,7 @@ async def get_user(telegram_id: str) -> Optional[dict]:
         # Преобразуем в чистый dict
         user = response.root[0].model_dump()
 
-        # так же получаем информацию о устройствах пользователя
+        # так же получаем информацию об устройствах пользователя
         devices: HwidUserDeviceDto = await remnawave.hwid.get_hwid_user(str(user['uuid']))
         # и добавляем устройства к данным о пользователе
         user['devices'] = devices.devices
@@ -137,6 +137,45 @@ async def create_new_user(username: str,
         return url_sub
 
 
+# После оплаты прибавляем пользователю длительность подписки (дни)
+async def add_days(telegram_id: str, days:int):
+    # # 1. Проверяем кэш под блокировкой
+    # lock = locks.setdefault(telegram_id, asyncio.Lock())
+    # async with lock:
+    #     now = datetime.utcnow().timestamp()
+    #     if (telegram_id in user_cache and
+    #             now - cache_time.get(telegram_id, 0) < TTL_SECONDS):
+    #         return user_cache[telegram_id]
+    # # 2. Если в кэше нет или устарел — идём в Remnawave
+    try:
+        response: TelegramUserResponseDto = await remnawave.users.get_users_by_telegram_id(telegram_id)
+        if not response:
+            return False
+        # Преобразуем в чистый dict
+        user = response.root[0].model_dump()
+        # время действия подписки
+        expire_at = user['expire_at']
+
+        if expire_at and user['status'] == 'ACTIVE':
+            # подписка ещё активная и статус ACTIVE
+            base_date = expire_at
+        else:
+            base_date = datetime.utcnow()
+
+        # Новая дата окончания подписки
+        new_expires = base_date + timedelta(days=days)
+
+        await remnawave.users.update_user(UpdateUserRequestDto(
+                                            uuid=user["uuid"],
+                                            expire_at=new_expires.isoformat()
+        ))
+        return True
+    except Exception as e:
+        print(f"Ошибка при получении пользователя {telegram_id}: {e}")
+        return None
+
+
+
 # Преобразование даты окончания подписки в норм вид
 def format_expire_date(expire_str: datetime) -> str:
     if not expire_str:
@@ -156,6 +195,9 @@ def format_expire_date(expire_str: datetime) -> str:
 #для тестирования
 async def main():
  # Fetch all users
+
+    await add_days('758504107',10)
+
     response: UsersResponseDto = await remnawave.users.get_users_by_telegram_id('758504107')
     # total_users: int = response.total
     # users: list[UserResponseDto] = response.users

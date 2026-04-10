@@ -4,7 +4,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 
 from config import load_config
-from handlers import user, other
+from database import init_db
+from handlers import user, payments ,other
+from handlers.payments import payments_router
 from keyboard.keyboard import set_main_menu
 
 # Инициализируем логгер
@@ -31,7 +33,7 @@ async def main():
     #
     # # Регистриуем роутеры в диспетчере
     dp.include_router(user.router)
-    # dp.include_router(other.router2)
+    dp.include_router(payments.payments_router)
 
     # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_webhook(drop_pending_updates=True)
@@ -39,4 +41,5 @@ async def main():
 
 
 if __name__ == '__main__':
+    init_db()   # создаём таблицы при первом запуске
     asyncio.run(main())
