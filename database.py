@@ -43,19 +43,6 @@ def init_db():
     ''')
     # Статусы   -- PENDING / CONFIRMED / CANCELED
 
-    # # Таблица подписок пользователей (чтобы знать текущую подписку)
-    # cursor.execute('''
-    #     CREATE TABLE IF NOT EXISTS user_subscriptions (
-    #         user_id INTEGER PRIMARY KEY,
-    #         username TEXT,
-    #         plan_key TEXT,
-    #         expire_at TEXT,
-    #         telegram_id INTEGER,
-    #         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    #         updated_at TEXT
-    #     )
-    # ''')
-
     conn.commit()
     conn.close()
     print("✅ База данных успешно инициализирована")
@@ -151,35 +138,33 @@ def update_db(status, transaction_id):
     }
 
 
-# Выдача/продление подписки
-# async def grant_subscription(user_id: int, plan_key: str, telegram_id: int = None, username: str = None):
-#     # Здесь можно добавить логику расчёта expire_at в зависимости от тарифа
-#     days = PAY_STARS.get(plan_key)
-#
-#     expire_at = (datetime.utcnow() + timedelta(days=days)).isoformat()
-#
-#     conn = get_db_connection()
-#     cursor = conn.cursor()
-#
-#     try:
-#         cursor.execute('''
-#             INSERT INTO user_subscriptions
-#             (user_id, username, plan_key, expire_at, telegram_id, updated_at)
-#             VALUES (?, ?, ?, ?, ?, ?)
-#             ON CONFLICT(user_id) DO UPDATE SET
-#                 plan_key = excluded.plan_key,
-#                 expire_at = excluded.expire_at,
-#                 username = excluded.username,
-#                 updated_at = excluded.updated_at
-#         ''', (user_id, username, plan_key, expire_at, telegram_id, datetime.utcnow().isoformat()))
-#
-#         conn.commit()
-#         print(f"✅ Подписка для пользователя {user_id} активирована ({plan_key})")
-#         return True
-#     except Exception as e:
-#         print(f"❌ Ошибка выдачи подписки: {e}")
-#         return False
-#     finally:
-#         conn.close()
 
 
+# Платеж не оплачен пометка EXPIRED в БД
+async def expire_old_payments():
+    while True:
+        now = datetime.utcnow()
+        next_run = now.replace(hour=3, minute=0, second=0, microsecond=0)
+
+        if next_run <= now:
+            next_run += timedelta(days=1)
+
+        sleep_time = (next_run - now).total_seconds()
+        await asyncio.sleep(sleep_time)
+
+        # 🔥 твоя очистка
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+                UPDATE payments
+                SET status = 'EXPIRED',
+                    processed_at = ?
+                WHERE status = 'PENDING'
+                AND created_at < datetime('now', '-30 minutes')
+            """, (datetime.utcnow().isoformat(),))
+
+        conn.commit()
+        conn.close()
+
+        print("🧹 Очистка выполнена")

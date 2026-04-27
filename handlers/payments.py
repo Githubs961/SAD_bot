@@ -1,10 +1,14 @@
+import asyncio
 from aiogram import Router, F, Bot
+from aiogram.client import bot
 from aiogram.types import CallbackQuery, LabeledPrice, PreCheckoutQuery, Message, InlineKeyboardMarkup, \
     InlineKeyboardButton
 from aiogram.filters import Command, CommandObject
-from database import save_payment, get_active_payment, update_db
+from aiogram.utils.markdown import hlink
+
+from database import save_payment, get_active_payment, update_db, get_db_connection
 from handlers.admins import admin_filter
-from lexicon.lexicon import PAY_STARS, PLANS, PAY_SBP, DAYS, PAYMENT_STATUS_MESSAGES
+from lexicon.lexicon import PAY_STARS, PLANS, PAY_SBP, DAYS, PAYMENT_STATUS_MESSAGES, KONF, SOGL
 from remnawave_api.api_remnavawe import invalidate_user_cache, add_days
 import uuid
 import os
@@ -86,7 +90,9 @@ async def pay_sbp(callback: CallbackQuery):
     # ✅ выдать доступ
 
 
-    await callback.message.edit_text("💳 Оплатите подписку:",
+    await callback.message.answer(f"{hlink(title='Политика конфиденциальности',url=KONF)}\n"
+                                  f"{hlink(title='Пользовательское соглашение',url=SOGL)}\n\n"
+                                  f"💳 Оплата подписки:", disable_web_page_preview=True,
     reply_markup=InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(
@@ -96,11 +102,12 @@ async def pay_sbp(callback: CallbackQuery):
             [InlineKeyboardButton(
                 text="🔄 Проверить оплату",
                 callback_data=f"check_{transaction_id}"
-            )],
-            [InlineKeyboardButton(
-                text="❌ Отмена",
-                callback_data=sub_text #Возвращаемся в тот тариф который выбирали
             )]
+            # ,
+            # [InlineKeyboardButton(
+            #     text="❌ Отмена",
+            #     callback_data=sub_text #Возвращаемся в тот тариф который выбирали
+            # )]
         ]
     )
     )
@@ -149,6 +156,9 @@ async def check_payment(callback: CallbackQuery):
             PAYMENT_STATUS_MESSAGES[status],
             show_alert=True
         )
+        return
+    if status == "EXPIRED":
+        await callback.answer("⌛ Платёж устарел, создайте новый", show_alert=True)
         return
 
     # ❌ ОТМЕНА / ОШИБКА
@@ -224,3 +234,51 @@ async def command_refund(message: Message, bot: Bot, command: CommandObject) -> 
         )
     except Exception as e:
         print(e)
+
+
+
+
+
+# автопроверка оплаты Platega
+async def auto_check_payments(bot):
+    while True:
+        print('Проверяю оплату')
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT transactionId, user_id, plan_key
+            FROM payments
+            WHERE status = 'PENDING'
+            AND created_at > datetime('now', '-30 minutes')
+        """)
+
+        payments = cursor.fetchall()
+        conn.close()
+
+        for p in payments:
+            try:
+                status_data = platega.get_payment_status(p["transactionId"])
+                status = status_data["status"]
+
+                row = update_db(status, p["transactionId"])
+
+                if status == "CONFIRMED" and row and row["old_status"] != "CONFIRMED":
+                    await add_days(
+                        telegram_id=str(p["user_id"]),
+                        days=DAYS[p["plan_key"]]
+                    )
+
+                    # 👉 уведомляем пользователя
+                    await bot.send_message(
+                        chat_id=p["user_id"],
+                        text="✅ Оплата прошла! Подписка активирована"
+                    )
+
+            except Exception as e:
+                print("auto_check error:", e)
+
+        await asyncio.sleep(120)  # ЧАСТОТА ПРОВЕРКИ ПЛАТЕЖА в сек
+
+
+
