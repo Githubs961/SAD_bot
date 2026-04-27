@@ -39,14 +39,14 @@ PLANS = {
     "sub_2m": "🗓 2 месяца",
 }
 PAY_STARS = {
-    "pay_1w": 5,
-    "pay_1m": 10,
-    "pay_2m": 15,
+    "pay_1w": 30,
+    "pay_1m": 90,
+    "pay_2m": 150,
 }
 PAY_SBP = {
-    "paysbp_1w": 1,
-    "paysbp_1m": 2,
-    "paysbp_2m": 3,
+    "paysbp_1w": 49,
+    "paysbp_1m": 149,
+    "paysbp_2m": 249,
 }
 DAYS = {
     "pay_1w": 7,
