@@ -65,8 +65,14 @@ async def show_profile(message: Message):
     if user:
         # await loading_msg.delete()
         traffic = get_user_traffic(message.from_user.id)
-        used_gb = round(traffic["used_bytes"] / 1024 ** 3, 2)
-        limit_gb = round(traffic["traffic_limit"] / 1024 ** 3, 2)
+
+        # ✅ Проверка на None
+        if traffic and traffic.get("used_bytes") is not None:
+            used_gb = round(traffic["used_bytes"] / 1024 ** 3, 2)
+            limit_gb = round(traffic.get("traffic_limit", 0) / 1024 ** 3, 2)
+        else:
+            used_gb = 0
+            limit_gb = 0
         await message.answer(text= f"🆔 <b>ID:</b> {user['username']}\n\n"
                                    f"⚡️<b>Статус подписки:</b> {user['status']}\n"
                                    f" └ Действует до: {format_expire_date(user['expire_at'])}\n\n"
@@ -91,8 +97,14 @@ async def back_to_profile(callback: CallbackQuery):
         # Редактируем текущее сообщение (то, где был список устройств)
         # и показываем в нём профиль
         traffic = get_user_traffic(callback.from_user.id)
-        used_gb = round(traffic["used_bytes"] / 1024 ** 3, 2)
-        limit_gb = round(traffic["traffic_limit"] / 1024 ** 3, 2)
+
+        # ✅ Проверка на None
+        if traffic and traffic.get("used_bytes") is not None:
+            used_gb = round(traffic["used_bytes"] / 1024 ** 3, 2)
+            limit_gb = round(traffic.get("traffic_limit", 0) / 1024 ** 3, 2)
+        else:
+            used_gb = 0
+            limit_gb = 0
         await callback.message.edit_text(text=f"🆔 <b>ID:</b> {user['username']}\n\n"
                                               f"⚡️<b>Статус подписки:</b> {user['status']}\n"
                                               f" └ Действует до: {format_expire_date(user['expire_at'])}\n\n"
