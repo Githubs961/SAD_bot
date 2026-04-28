@@ -67,15 +67,16 @@
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files>
-      <object connection-id="659179da-c2ca-4bec-8f85-1d0fb581bca1" object-ref="schemas/main/tables/user_traffic" />
-    </open-files>
+    <open-files />
   </component>
   <component name="DBNavigator.Project.DatabasePrerequisiteManager">
     <prerequisites />
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="659179da-c2ca-4bec-8f85-1d0fb581bca1" />
+  </component>
+  <component name="DBNavigator.Project.DatasetFilterManager">
+    <filter-actions connection-id="659179da-c2ca-4bec-8f85-1d0fb581bca1" dataset="main.user_traffic" active-filter-id="" />
   </component>
   <component name="DBNavigator.Project.ExecutionManager">
     <retain-sticky-names value="false" />
