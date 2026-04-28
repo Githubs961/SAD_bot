@@ -69,7 +69,7 @@ async def show_profile(message: Message):
         # ✅ Проверка на None
         if traffic and traffic["used_bytes"] is not None:
             used_gb = round(traffic["used_bytes"] / 1024 ** 3, 2)
-            limit_gb = round(traffic["traffic_limit", 0] / 1024 ** 3, 2)
+            limit_gb = round(traffic["traffic_limit"] / 1024 ** 3, 2)
         else:
             used_gb = 0
             limit_gb = 0
@@ -101,7 +101,7 @@ async def back_to_profile(callback: CallbackQuery):
         # ✅ Проверка на None
         if traffic and traffic["used_bytes"] is not None:
             used_gb = round(traffic["used_bytes"] / 1024 ** 3, 2)
-            limit_gb = round(traffic["traffic_limit", 0] / 1024 ** 3, 2)
+            limit_gb = round(traffic["traffic_limit"] / 1024 ** 3, 2)
         else:
             used_gb = 0
             limit_gb = 0
