@@ -13,6 +13,7 @@ from remnawave.models import UpdateUserRequestDto
 async def update_traffic():
     users_stats = await get_node_user_stats()
 
+
     to_disable = set()
     now = datetime.utcnow()
 
