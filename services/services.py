@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from database import get_db_connection, db_lock
+from lexicon.lexicon import TRAFFIC_SEC
 from remnawave_api.api_remnavawe import get_node_user_stats, remnawave
 from database import get_db_connection
 from remnawave.models import UpdateUserRequestDto
@@ -13,6 +14,7 @@ async def update_traffic():
     users_stats = await get_node_user_stats()
 
     to_disable = set()
+    now = datetime.utcnow()
 
     async with db_lock:
         conn = get_db_connection()
@@ -30,7 +32,7 @@ async def update_traffic():
             if not user_id:
                 continue
 
-            # ✅ 2. только активные
+            # ✅ 2. берём трафик (только активные)
             cursor.execute("""
                 SELECT * FROM user_traffic 
                 WHERE user_id = ? AND is_active = 1
@@ -40,6 +42,36 @@ async def update_traffic():
             if not traffic:
                 continue
 
+            # -----------------------------
+            # 🔁 3. ПРОВЕРКА ПЕРИОДА
+            # -----------------------------
+            period_end = datetime.fromisoformat(traffic["period_end"])
+
+            if now >= period_end:
+                print(f"🔄 Новый период для {user_id}")
+
+                new_end = now + timedelta(days=30)
+
+                cursor.execute("""
+                            UPDATE user_traffic
+                            SET used_bytes = 0,
+                                period_start = ?,
+                                period_end = ?,
+                                last_total_bytes = ?,  -- 🔥 фиксируем текущее значение API
+                                updated_at = ?,
+                                is_active = 1
+                            WHERE user_id = ?
+                        """, (
+                    now.isoformat(),
+                    new_end.isoformat(),
+                    total,  # ❗ ВАЖНО
+                    now.isoformat(),
+                    user_id
+                ))
+
+                continue  # 👉 идём к следующему пользователю
+
+            # СЧИТАЕМ ДЕЛЬТУ
             last_total = traffic["last_total_bytes"]
 
             delta = total - last_total
@@ -48,6 +80,7 @@ async def update_traffic():
 
             new_used = traffic["used_bytes"] + delta
 
+            # ОБНОВЛЯЕМ ТРАФИК
             cursor.execute('''
                 UPDATE user_traffic
                 SET used_bytes = ?,
@@ -61,7 +94,7 @@ async def update_traffic():
                 user_id
             ))
 
-            # 🚨 лимит
+            # 🚨 ПРОВЕРКА ЛИМИТА
             if new_used >= traffic["traffic_limit"]:
 
                 print(f"🚫 Пользователь {user_id} превысил лимит")
@@ -91,7 +124,7 @@ async def traffic_worker():
         except Exception as e:
             print(f"❌ Ошибка update_traffic: {e}")
 
-        await asyncio.sleep(1800) # (в сек)
+        await asyncio.sleep(TRAFFIC_SEC) # (в сек)
 
 
 

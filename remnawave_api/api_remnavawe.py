@@ -272,7 +272,6 @@ async def main():
 
     uuid = 'a2fcefb8-ee25-484a-8fb9-89ef8f1145ec' # id ноды яндекс
 
-    print(await get_node_user_stats())
     # traffic: GetBandwidthStatsResponseDto = remnawave.bandwidthstats.get_stats_nodes_usage()
     # resp_band = await remnawave.nodes.get_all_nodes()
     # print(resp_band)

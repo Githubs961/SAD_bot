@@ -29,22 +29,22 @@
   </component>
   <component name="DBNavigator.Project.DatabaseAssistantManager">
     <assistants>
-      <assistant-state connection-id="ab4eccf6-89dc-453a-8acf-9b9a277efc2d" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
-        <tools />
-      </assistant-state>
       <assistant-state connection-id="ab4eccf6-89dc-453a-8acf-9b9a277efc2d" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
         <tools />
       </assistant-state>
-      <assistant-state connection-id="1aaf07d2-2a91-496b-8b3b-251182479f92" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
+      <assistant-state connection-id="ab4eccf6-89dc-453a-8acf-9b9a277efc2d" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
         <tools />
       </assistant-state>
       <assistant-state connection-id="1aaf07d2-2a91-496b-8b3b-251182479f92" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
         <tools />
       </assistant-state>
-      <assistant-state connection-id="659179da-c2ca-4bec-8f85-1d0fb581bca1" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
+      <assistant-state connection-id="1aaf07d2-2a91-496b-8b3b-251182479f92" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
         <tools />
       </assistant-state>
       <assistant-state connection-id="659179da-c2ca-4bec-8f85-1d0fb581bca1" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
+        <tools />
+      </assistant-state>
+      <assistant-state connection-id="659179da-c2ca-4bec-8f85-1d0fb581bca1" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
         <tools />
       </assistant-state>
     </assistants>
@@ -74,9 +74,6 @@
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="659179da-c2ca-4bec-8f85-1d0fb581bca1" />
-  </component>
-  <component name="DBNavigator.Project.DatasetFilterManager">
-    <filter-actions connection-id="659179da-c2ca-4bec-8f85-1d0fb581bca1" dataset="main.user_traffic" active-filter-id="" />
   </component>
   <component name="DBNavigator.Project.ExecutionManager">
     <retain-sticky-names value="false" />

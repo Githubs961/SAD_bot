@@ -9,7 +9,7 @@ from aiogram.utils.markdown import hlink
 from database import save_payment, get_active_payment, update_db, get_db_connection, db_lock
 from handlers.admins import admin_filter
 from keyboard.keyboard import sub_keyboard
-from lexicon.lexicon import PAY_STARS, PLANS, PAY_SBP, DAYS, PAYMENT_STATUS_MESSAGES, KONF, SOGL
+from lexicon.lexicon import PAY_STARS, PLANS, PAY_SBP, DAYS, PAYMENT_STATUS_MESSAGES, KONF, SOGL, PAYMENT_SEC
 from remnawave_api.api_remnavawe import invalidate_user_cache, add_days
 import uuid
 import os
@@ -307,7 +307,7 @@ async def auto_check_payments(bot):
             except Exception as e:
                 print("auto_check error:", e)
 
-        await asyncio.sleep(120)  # ЧАСТОТА ПРОВЕРКИ ПЛАТЕЖА в сек
+        await asyncio.sleep(PAYMENT_SEC)  # ЧАСТОТА ПРОВЕРКИ ПЛАТЕЖА в сек
 
 
 
