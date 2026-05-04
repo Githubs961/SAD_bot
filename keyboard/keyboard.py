@@ -88,7 +88,8 @@ def instruction_keyboard(step: int):
     keyboard.append(
         [InlineKeyboardButton(
             text="🆘 Написать в поддержку",
-            callback_data="support_contact",  url="https://t.me/monako113"
+            callback_data="support_contact",
+            url="https://t.me/snetwork_support_bot"
         )]
     )
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
