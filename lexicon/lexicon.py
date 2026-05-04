@@ -14,9 +14,9 @@ TRAFFIC_SEC: int = 1800 # 30 мин
 PAYMENT_SEC: int = 600  #10 мин
 
 
-SQUADS = ["6002d566-a23d-40d4-82c7-624c2a7777b0", #Латвия
+SQUADS : list = ["6002d566-a23d-40d4-82c7-624c2a7777b0", #Латвия
           "ecb4eace-49a3-4bdc-b9a7-190500b40e71",#Яндекс
-          "27577928-dd80-4491-b109-880cdc1ecb4f", #Нидерланды UFO
+          "a431433a-cee8-47fc-bbb6-33c419331a94", #Нидерланды UFO
           "27577928-dd80-4491-b109-880cdc1ecb4f"] #Финляндия
 
 LEXICON_COMMANDS: dict[str, str] = {
@@ -48,16 +48,19 @@ PLANS = {
     "sub_1m": "🗓 1 месяц",
     "sub_2m": "🗓 2 месяца",
 }
+
 PAY_STARS = {
-    "pay_1w": 3,
-    "pay_1m": 9,
-    "pay_2m": 15,
+    "pay_1w": 50,
+    "pay_1m": 100,
+    "pay_2m": 150,
 }
+
 PAY_SBP = {
     "paysbp_1w": 49,
     "paysbp_1m": 149,
     "paysbp_2m": 249,
 }
+
 DAYS = {
     "pay_1w": 7,
     "pay_1m": 30,
