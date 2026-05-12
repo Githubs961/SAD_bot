@@ -101,7 +101,7 @@ async def successful_payment(message: Message):
                 f"Подписка активирована.\n\n"
                 f"Проверьте Личный кабинет"
             )
-            # # Очищаем кэш пользователя( перенес функцию в addd days)
+            # # Очищаем кэш пользователя( перенес функцию в add days)
             # await invalidate_user_cache(str(user_id))
         else:
             await message.answer("❌ Ошибка активации подписки. Обратитесь в поддержку.")
