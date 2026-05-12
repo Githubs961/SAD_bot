@@ -92,7 +92,7 @@ async def successful_payment(message: Message):
             await reset_traffic(user_id)
 
             # 4. Включаю скваду Яндекс если отключена
-            await enable_user_squad(user_id)
+            #await enable_user_squad(user_id)
 
 
         if success:
@@ -103,8 +103,8 @@ async def successful_payment(message: Message):
             )
             # # Очищаем кэш пользователя( перенес функцию в add days)
             # await invalidate_user_cache(str(user_id))
-        # else:
-        #     await message.answer("❌ Ошибка активации подписки. Обратитесь в поддержку.")
+        else:
+            await message.answer("❌ Ошибка активации подписки. Обратитесь в поддержку.")
 
     except Exception as e:
         print(f"Ошибка обработки платежа: {e}")
