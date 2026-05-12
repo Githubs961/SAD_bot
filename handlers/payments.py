@@ -92,7 +92,10 @@ async def successful_payment(message: Message):
             await reset_traffic(user_id)
 
             # 4. Включаю скваду Яндекс если отключена
-            #await enable_user_squad(user_id)
+            try:
+                await enable_user_squad(user_id)
+            except Exception as e:
+                print(f"⚠️ Не удалось включить squad для {user_id}: {e}")
 
 
         if success:
