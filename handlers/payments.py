@@ -10,6 +10,7 @@ from database import save_payment, get_active_payment, update_db, get_db_connect
 from handlers.admins import admin_filter
 from keyboard.keyboard import sub_keyboard
 from lexicon.lexicon import PAY_STARS, PLANS, PAY_SBP, DAYS, PAYMENT_STATUS_MESSAGES, KONF, SOGL, PAYMENT_SEC
+from main import logger
 from remnawave_api.api_remnavawe import invalidate_user_cache, add_days
 import uuid
 import os
@@ -92,7 +93,10 @@ async def successful_payment(message: Message):
             await reset_traffic(user_id)
 
             # 4. Включаю скваду Яндекс если отключена
-            #await enable_user_squad(user_id)
+            try:
+                await enable_user_squad(user_id)
+            except Exception as e:
+                logger.error(f"Не удалось включить squad: {e}")
 
 
         if success:
