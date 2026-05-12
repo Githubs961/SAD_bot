@@ -5,7 +5,7 @@ from aiogram.types import CallbackQuery, LabeledPrice, PreCheckoutQuery, Message
     InlineKeyboardButton
 from aiogram.filters import Command, CommandObject
 from aiogram.utils.markdown import hlink
-
+import traceback
 from database import save_payment, get_active_payment, update_db, get_db_connection, db_lock
 from handlers.admins import admin_filter
 from keyboard.keyboard import sub_keyboard
@@ -108,6 +108,7 @@ async def successful_payment(message: Message):
 
     except Exception as e:
         print(f"Ошибка обработки платежа: {e}")
+        traceback.print_exc()  # печатает полный стек вызовов
         await message.answer("❌ Произошла ошибка. Обратитесь в поддержку.")
 
 
