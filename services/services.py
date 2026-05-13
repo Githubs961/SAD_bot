@@ -266,41 +266,73 @@ async def enable_user_squad(user_id: int):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT uuid FROM users WHERE user_id = ?", (user_id,))
+    cursor.execute(
+        "SELECT uuid FROM users WHERE user_id = ?",
+        (user_id,)
+    )
+
     row = cursor.fetchone()
     conn.close()
 
     if not row:
-        return
+        print(f"❌ UUID не найден для {user_id}")
+        return False
 
     uuid = row["uuid"]
 
-    user = await remnawave.users.get_user_by_uuid(uuid)
-    squads = [str(s.uuid) for s in user.active_internal_squads]
+    try:
+        user = await remnawave.users.get_user_by_uuid(uuid)
 
-    YANDEX_NODE_ID = "ecb4eace-49a3-4bdc-b9a7-190500b40e71"
+        # ✅ защита от None
+        active_squads = user.active_internal_squads or []
 
-    if YANDEX_NODE_ID in squads:
-        return
+        squads = [str(s.uuid) for s in active_squads]
 
-    new_squads = squads + [YANDEX_NODE_ID]
+        YANDEX_NODE_ID = "ecb4eace-49a3-4bdc-b9a7-190500b40e71"
 
-    await remnawave.users.update_user(UpdateUserRequestDto(
-        uuid=uuid,
-        active_internal_squads=new_squads
-    ))
+        # ✅ уже включен
+        if YANDEX_NODE_ID in squads:
 
-    # ✅ ОТКРЫВАЕМ НОВОЕ СОЕДИНЕНИЕ
-    conn = get_db_connection()
-    cursor = conn.cursor()
+            conn = get_db_connection()
+            cursor = conn.cursor()
 
-    cursor.execute("""
-        UPDATE user_traffic
-        SET is_active = 1
-        WHERE user_id = ?
-    """, (user_id,))
+            cursor.execute("""
+                UPDATE user_traffic
+                SET is_active = 1
+                WHERE user_id = ?
+            """, (user_id,))
 
-    conn.commit()
-    conn.close()
+            conn.commit()
+            conn.close()
 
-    print(f"✅ Пользователь {user_id} снова подключен к Yandex ноде")
+            return True
+
+        # ✅ убираем дубликаты
+        new_squads = list(set(squads + [YANDEX_NODE_ID]))
+
+        await remnawave.users.update_user(
+            UpdateUserRequestDto(
+                uuid=uuid,
+                active_internal_squads=new_squads
+            )
+        )
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE user_traffic
+            SET is_active = 1
+            WHERE user_id = ?
+        """, (user_id,))
+
+        conn.commit()
+        conn.close()
+
+        print(f"✅ Пользователь {user_id} снова подключен")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ enable_user_squad error {user_id}: {e}")
+        return False
