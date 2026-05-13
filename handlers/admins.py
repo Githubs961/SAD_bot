@@ -24,7 +24,7 @@ admin_filter = AdminFilter()
 
 
 # Скачивание таблицы с платежами
-@router.message(Command("dbcheck"), admin_filter)
+@router.message(Command("db"), admin_filter)
 async def db_check(message: Message):
     conn = get_db_connection()
     cursor = conn.cursor()

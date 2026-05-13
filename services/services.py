@@ -263,59 +263,43 @@ async def disable_user_squad(user_id: int):
 
 # Включение сквады Яндекс при обновлении подписки(если был превышен трафик и она отключалась)
 async def enable_user_squad(user_id: int):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT uuid FROM users WHERE user_id = ?",
-        (user_id,)
-    )
-
-    row = cursor.fetchone()
-    conn.close()
-
-    if not row:
-        print(f"❌ UUID не найден для {user_id}")
-        return False
-
-    uuid = row["uuid"]
 
     try:
-        user = await remnawave.users.get_user_by_uuid(uuid)
+        response = await remnawave.users.get_users_by_telegram_id(
+            str(user_id)
+        )
 
-        # ✅ защита от None
+        if not response or not response.root:
+            print(f"❌ Пользователь {user_id} не найден")
+            return False
+
+        user = response.root[0]
+
+        uuid = str(user.uuid)
+
         active_squads = user.active_internal_squads or []
 
-        squads = [str(s.uuid) for s in active_squads]
+        squads = []
+
+        for s in active_squads:
+
+            if hasattr(s, "uuid"):
+                squads.append(str(s.uuid))
+
+            elif isinstance(s, str):
+                squads.append(s)
 
         YANDEX_NODE_ID = "ecb4eace-49a3-4bdc-b9a7-190500b40e71"
 
-        # ✅ уже включен
-        if YANDEX_NODE_ID in squads:
+        if YANDEX_NODE_ID not in squads:
+            squads.append(YANDEX_NODE_ID)
 
-            conn = get_db_connection()
-            cursor = conn.cursor()
-
-            cursor.execute("""
-                UPDATE user_traffic
-                SET is_active = 1
-                WHERE user_id = ?
-            """, (user_id,))
-
-            conn.commit()
-            conn.close()
-
-            return True
-
-        # ✅ убираем дубликаты
-        new_squads = list(set(squads + [YANDEX_NODE_ID]))
-
-        await remnawave.users.update_user(
-            UpdateUserRequestDto(
-                uuid=uuid,
-                active_internal_squads=new_squads
+            await remnawave.users.update_user(
+                UpdateUserRequestDto(
+                    uuid=uuid,
+                    active_internal_squads=list(set(squads))
+                )
             )
-        )
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -329,7 +313,7 @@ async def enable_user_squad(user_id: int):
         conn.commit()
         conn.close()
 
-        print(f"✅ Пользователь {user_id} снова подключен")
+        print(f"✅ Squad включен {user_id}")
 
         return True
 
