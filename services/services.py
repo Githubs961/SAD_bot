@@ -1,5 +1,8 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
+from aiogram import Bot
+
 from database import get_db_connection, db_lock
 from lexicon.lexicon import TRAFFIC_SEC
 from remnawave_api.api_remnavawe import get_node_user_stats, remnawave
@@ -320,3 +323,55 @@ async def enable_user_squad(user_id: int):
     except Exception as e:
         print(f"❌ enable_user_squad error {user_id}: {e}")
         return False
+
+
+
+#Уведомление пользователя о скором окончании подписки
+async def subscription_notify_worker(bot: Bot):
+    while True:
+        try:
+            print("📨 Проверка подписок...")
+
+            users = await remnawave.users.get_all_users()
+
+            for user in users.users:
+
+                try:
+                #     if not user.telegram_id:
+                #         continue
+                #
+                #     if not user.expire_at:
+                #         continue
+                #
+                #     if user.status != "ACTIVE":
+                #         continue
+                    if user.telegram_id == 758504107:
+                        remaining = user.expire_at - datetime.now(timezone.utc)
+
+                        # меньше 2 дней
+                        if remaining <= timedelta(days=2):
+
+                            days_left = remaining.days
+                            hours_left = remaining.seconds // 3600
+
+                            await bot.send_message(
+                                chat_id=int(user.telegram_id),
+                                text=
+                                f"⚠️ Ваша подписка скоро закончится\n\n"
+                                f"⏳ Осталось: {days_left} дн. {hours_left} ч.\n\n"
+                                f"Продлите доступ заранее и оставайтесь на связи "
+                            )
+
+                            print(
+                                f"📨 Уведомление отправлено "
+                                f"{user.telegram_id}"
+                            )
+
+                except Exception as e:
+                    print(f"notify user error: {e}")
+
+        except Exception as e:
+            print(f"subscription_notify_worker error: {e}")
+
+        # каждые 24 часа
+        await asyncio.sleep(86400)
