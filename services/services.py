@@ -349,7 +349,7 @@ async def subscription_notify_worker(bot: Bot):
                         remaining = user.expire_at - datetime.now(timezone.utc)
 
                         # меньше 2 дней
-                        if remaining <= timedelta(days=2):
+                        if timedelta(0) < remaining <= timedelta(days=2):
 
                             days_left = remaining.days
                             hours_left = remaining.seconds // 3600
