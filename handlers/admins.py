@@ -116,7 +116,7 @@ async def db_check(message: Message):
 
 
 # Отправка сообщения всем пользователям
-@router.message(Command("broadcast",admin_filter))
+@router.message(Command("message"),admin_filter)
 async def broadcast(message: Message):
 
 
