@@ -122,12 +122,12 @@ async def broadcast(message: Message):
 
 
     # текст после команды
-    text = message.text.replace("/broadcast", "").strip()
+    text = message.text.replace("/message", "").strip()
 
     if not text:
         await message.answer(
             "❌ Укажите текст\n\n"
-            "/broadcast Ваш текст"
+            "/message Ваш текст"
         )
         return
 
@@ -157,7 +157,7 @@ async def broadcast(message: Message):
 
             except Exception as e:
                 failed += 1
-                print(f"broadcast error {user.telegram_id}: {e}")
+                print(f"message error {user.telegram_id}: {e}")
 
         await message.answer(
             f"✅ Рассылка завершена\n\n"
