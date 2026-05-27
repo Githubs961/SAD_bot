@@ -337,35 +337,35 @@ async def subscription_notify_worker(bot: Bot):
             for user in users.users:
 
                 try:
-                #     if not user.telegram_id:
-                #         continue
-                #
-                #     if not user.expire_at:
-                #         continue
-                #
-                #     if user.status != "ACTIVE":
-                #         continue
-                    if user.telegram_id == 758504107:
+                    if not user.telegram_id:
+                        continue
+
+                    if not user.expire_at:
+                        continue
+
+                    if user.status != "ACTIVE":
+                        continue
+
                         remaining = user.expire_at - datetime.now(timezone.utc)
 
-                        # меньше 2 дней
-                        if timedelta(0) < remaining <= timedelta(days=2):
+                    # меньше 2 дней
+                    if timedelta(0) < remaining <= timedelta(days=2):
 
-                            days_left = remaining.days
-                            hours_left = remaining.seconds // 3600
+                        days_left = remaining.days
+                        hours_left = remaining.seconds // 3600
 
-                            await bot.send_message(
-                                chat_id=int(user.telegram_id),
-                                text=
-                                f"⚠️ Ваша подписка скоро закончится\n\n"
-                                f"⏳ Осталось: {days_left} дн. {hours_left} ч.\n\n"
-                                f"Продлите доступ заранее и оставайтесь на связи."
-                            )
+                        await bot.send_message(
+                            chat_id=int(user.telegram_id),
+                            text=
+                            f"⚠️ Ваша подписка скоро закончится\n\n"
+                            f"⏳ Осталось: {days_left} дн. {hours_left} ч.\n\n"
+                            f"Продлите доступ заранее и оставайтесь на связи."
+                        )
 
-                            print(
-                                f"📨 Уведомление отправлено "
-                                f"{user.telegram_id}"
-                            )
+                        print(
+                            f"📨 Уведомление отправлено "
+                            f"{user.telegram_id}"
+                        )
 
                 except Exception as e:
                     print(f"notify user error: {e}")

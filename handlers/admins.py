@@ -1,3 +1,5 @@
+import asyncio
+
 from dotenv import load_dotenv
 from aiogram.filters import BaseFilter, Command
 from aiogram.types import Message, BufferedInputFile
@@ -7,8 +9,7 @@ from handlers.user import router
 import csv
 import io
 from datetime import datetime
-
-
+from remnawave_api.api_remnavawe import remnawave
 IDS = os.getenv('ADMINS_ID')
 
 # Проверка на админку по ID
@@ -110,3 +111,59 @@ async def db_check(message: Message):
         caption=stats_text,
         parse_mode='Markdown'
     )
+
+
+
+
+# Отправка сообщения всем пользователям
+@router.message(Command("broadcast",admin_filter))
+async def broadcast(message: Message):
+
+
+
+    # текст после команды
+    text = message.text.replace("/broadcast", "").strip()
+
+    if not text:
+        await message.answer(
+            "❌ Укажите текст\n\n"
+            "/broadcast Ваш текст"
+        )
+        return
+
+    await message.answer("📨 Начинаю рассылку...")
+
+    success = 0
+    failed = 0
+
+    try:
+        users = await remnawave.users.get_all_users()
+
+        for user in users.users:
+
+            try:
+                if not user.telegram_id:
+                    continue
+
+                await message.bot.send_message(
+                    chat_id=int(user.telegram_id),
+                    text=text
+                )
+
+                success += 1
+
+                # антифлуд Telegram
+                await asyncio.sleep(0.05)
+
+            except Exception as e:
+                failed += 1
+                print(f"broadcast error {user.telegram_id}: {e}")
+
+        await message.answer(
+            f"✅ Рассылка завершена\n\n"
+            f"Успешно: {success}\n"
+            f"Ошибок: {failed}"
+        )
+
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {e}")
