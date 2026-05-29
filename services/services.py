@@ -173,7 +173,7 @@ async def reset_traffic(user_id: int):
 
 # Лимит трафика для ноды при создании пользователя заносим в БД
 async def init_traffic(user_id: int):
-    traffic_limit_bytes = 5 * 1024 ** 3 # 50 ГБ
+    traffic_limit_bytes = 50 * 1024 ** 3 # 50 ГБ
 
     conn = get_db_connection()
     cursor = conn.cursor()
