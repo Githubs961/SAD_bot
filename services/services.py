@@ -345,7 +345,7 @@ async def subscription_notify_worker(bot: Bot):
                     if user.status != "ACTIVE":
                         continue
 
-                        remaining = user.expire_at - datetime.now(timezone.utc)
+                    remaining = user.expire_at - datetime.now(timezone.utc)
 
                     # меньше 2 дней
                     if timedelta(0) < remaining <= timedelta(days=2):
