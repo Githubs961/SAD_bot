@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from aiogram import Bot
 
 from database import get_db_connection, db_lock
-from lexicon.lexicon import TRAFFIC_SEC
+from lexicon.lexicon import TRAFFIC_SEC, SQUAD_ID
 from remnawave_api.api_remnavawe import get_node_user_stats, remnawave
 from database import get_db_connection
 from remnawave.models import UpdateUserRequestDto
@@ -14,6 +14,7 @@ from remnawave.models import UpdateUserRequestDto
 
 # Обновление статистики трафика
 async def update_traffic():
+    # Сбор статистики трафика на ноде
     users_stats = await get_node_user_stats()
 
     to_disable = set()
@@ -172,7 +173,7 @@ async def reset_traffic(user_id: int):
 
 # Лимит трафика для ноды при создании пользователя заносим в БД
 async def init_traffic(user_id: int):
-    traffic_limit_bytes = 50 * 1024 ** 3 # 50 ГБ
+    traffic_limit_bytes = 5 * 1024 ** 3 # 50 ГБ
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -194,7 +195,7 @@ async def init_traffic(user_id: int):
         VALUES (?, ?, 0, ?, ?, ?, 0, ?)
     ''', (
         user_id,
-        "YANDEX_NODE",
+        "LTE_NODE",
         traffic_limit_bytes,
         now.isoformat(),
         end.isoformat(),
@@ -233,13 +234,12 @@ async def disable_user_squad(user_id: int):
 
     squads = [str(s.uuid) for s in user.active_internal_squads]
 
-    YANDEX_NODE_ID = "ecb4eace-49a3-4bdc-b9a7-190500b40e71"
 
     # ❗ если уже нет ноды — НЕ трогаем
-    if YANDEX_NODE_ID not in squads:
+    if SQUAD_ID not in squads:
         return
 
-    new_squads = [s for s in squads if s != YANDEX_NODE_ID]
+    new_squads = [s for s in squads if s != SQUAD_ID]
 
     await remnawave.users.update_user(UpdateUserRequestDto(
         uuid=uuid,
@@ -292,10 +292,9 @@ async def enable_user_squad(user_id: int):
             elif isinstance(s, str):
                 squads.append(s)
 
-        YANDEX_NODE_ID = "ecb4eace-49a3-4bdc-b9a7-190500b40e71"
 
-        if YANDEX_NODE_ID not in squads:
-            squads.append(YANDEX_NODE_ID)
+        if SQUAD_ID not in squads:
+            squads.append(SQUAD_ID)
 
             await remnawave.users.update_user(
                 UpdateUserRequestDto(

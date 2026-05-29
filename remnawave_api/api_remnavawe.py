@@ -5,7 +5,7 @@ import aiohttp
 import requests
 from dotenv import load_dotenv
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict
 from remnawave import RemnawaveSDK  # Updated import for new package
 from remnawave.models import (UsersResponseDto,
@@ -18,7 +18,7 @@ from remnawave.models import (UsersResponseDto,
                               UpdateUserRequestDto,
                               GetBandwidthStatsResponseDto)
 
-from lexicon.lexicon import SQUADS
+from lexicon.lexicon import SQUADS, LTE_NODE_UUID
 
 load_dotenv()  # вызов переменных окружения, файл ".env"
 
@@ -174,21 +174,6 @@ async def add_days(telegram_id: str, days:int):
 
 
 
-# Преобразование даты окончания подписки в норм вид
-# def format_expire_date(expire_str: datetime) -> str:
-#     if not expire_str:
-#         return "—"
-#     """Красиво форматирует дату окончания подписки"""
-#     try:
-#         # Форматируем в удобный вид
-#         return expire_str.strftime("%d.%m.%Y %H:%M")
-#         # Примеры вывода:
-#         # 07 апреля 2026, 06:41
-#         # 15 мая 2026, 23:59
-#     except:
-#         return "—"
-from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo  # Python 3.9+, или используйте pytz
 
 
 # Преобразование даты окончания подписки в норм вид
@@ -229,7 +214,7 @@ def format_expire_date(expire_str: datetime, local_offset: int = 3) -> str:
 
 # Получение трафика на ноде
 async def get_node_user_stats():
-    uuid = 'a2fcefb8-ee25-484a-8fb9-89ef8f1145ec'  # id ноды яндекс
+    uuid = LTE_NODE_UUID   # id ноды для LTE
     url = f"https://panelsubarikvpn.mooo.com/api/bandwidth-stats/nodes/{uuid}/users"
 
     today = datetime.utcnow().date()

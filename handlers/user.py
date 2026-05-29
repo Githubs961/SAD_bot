@@ -45,7 +45,7 @@ async def subscription_list(message: Message):
                 username=user["username"],
                 uuid=user["uuid"]
             )
-
+            # Запись в БД для подсчета трафика
             await init_traffic(int(message.from_user.id))
         await message.answer(text=f'🎁 Пробный период 3 дня активирован\n\nДля подключения перейдите в\n 🏡 Личный кабинет ',# Ссылка для подключения:\n{sub_url}
                              reply_markup=sub_keyboard)
@@ -63,7 +63,7 @@ async def show_profile(message: Message):
     user = await get_user(str(message.from_user.id))
     # если пользователь найден
     if user:
-        # await loading_msg.delete()
+        await init_traffic(message.from_user.id)
         traffic = get_user_traffic(message.from_user.id)
 
         # ✅ Проверка на None
