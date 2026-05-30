@@ -8,9 +8,9 @@ from aiogram.utils.markdown import hlink
 from database import save_user, get_user_traffic
 from remnawave_api.api_remnavawe import (get_user,
                                          create_new_user,
-                                         format_expire_date)
+                                         format_expire_date, delete_user_device, invalidate_user_cache)
 from keyboard.keyboard import keyboard, sub_keyboard, pay_keyboard, profile_keyboard, instruction_keyboard, \
-    devices_keyboard
+    devices_keyboard, delite_device
 from lexicon.lexicon import LEXICON_RU, PLANS, PAY_STARS, INSTRUCTION
 from services.services import init_traffic
 
@@ -171,14 +171,111 @@ async def click_add_device(callback: CallbackQuery):
     user = await get_user(str(callback.from_user.id))
     devices = user['devices']
     if not devices:
-        await callback.answer("У вас пока нет подключённых устройств", show_alert=True)
+        await callback.answer("У вас нет подключённых устройств", show_alert=True)
         return
     if devices: # не верная проверка на устройства нужно перепроверить
-        text = ''
+        text = '📱 <b>Ваши устройства</b>\n\n'
         for i, dev in enumerate(devices,1): # dev это объект поэтому обращаемся через . а не  dev['device_model']
-            text += f"{i}. <b>{str(dev.device_model)}</b>\n"
+            text += f"<b>{i}. {str(dev.device_model)}</b>\n"
             text += f"   Приложение: {dev.user_agent}\n"
             text += f"   Добавлено: {dev.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
-        await callback.message.edit_text(text=text,parse_mode="HTML", reply_markup=devices_keyboard()) #добавить клавиатуру с устр-вами для удаления
+        await callback.message.edit_text(text=text,parse_mode="HTML", reply_markup=devices_keyboard(devices)) #добавить клавиатуру с устр-вами для удаления
 
     await callback.answer()
+
+
+
+# Подтверждение удаления устройства
+@router.callback_query(F.data.startswith("confirm_delete:"))
+async def confirm_delete_device(callback: CallbackQuery):
+
+    hwid = callback.data.split(":", 1)[1]
+
+    user = await get_user(str(callback.from_user.id))
+
+    device = next(
+        (d for d in user["devices"] if d.hwid == hwid),
+        None
+    )
+
+    if not device:
+        await callback.answer(
+            "Устройство не найдено",
+            show_alert=True
+        )
+        return
+
+
+
+    await callback.message.edit_text(
+        text=(
+            f"⚠️ <b>Удалить устройство?</b>\n\n"
+            f"📱 {device.device_model}\n"
+            f"🖥 {device.platform}\n\n"
+            f"После удаления устройство потребуется "
+            f"авторизовать заново."
+        ),
+        parse_mode="HTML",
+        reply_markup= delite_device(hwid)
+    )
+
+    await callback.answer()
+
+
+# Удаление устройства и возврат в Личный кабинет
+@router.callback_query(F.data.startswith("delete_device:"))
+async def delete_device(callback: CallbackQuery):
+
+    hwid = callback.data.split(":", 1)[1]
+
+    user = await get_user(str(callback.from_user.id))
+
+
+    #Вызываем API remnawave
+    success = await delete_user_device(
+        telegram_id=str(callback.from_user.id),
+        user_uuid=user["uuid"],
+        hwid=hwid
+    )
+    #
+    if success:
+        await callback.answer(
+            "✅ Устройство удалено",
+            show_alert=True
+        )
+
+    else:
+        await callback.answer(
+            "❌ Ошибка удаления устройства",
+            show_alert=True
+        )
+
+        # очищаем кэш
+    await invalidate_user_cache(str(callback.from_user.id))
+
+    # получаем обновлённого пользователя
+    user = await get_user(str(callback.from_user.id))
+
+    traffic = get_user_traffic(callback.from_user.id)
+
+    if traffic and traffic["used_bytes"] is not None:
+        used_gb = round(traffic["used_bytes"] / 1024 ** 3, 2)
+        limit_gb = round(traffic["traffic_limit"] / 1024 ** 3, 2)
+    else:
+        used_gb = 0
+        limit_gb = 0
+
+    await callback.message.edit_text(
+        text=f"🆔 <b>ID:</b> {user['username']}\n\n"
+             f"⚠️<b>Статус подписки:</b> {user['status']}\n"
+             f" └ Действует до: {format_expire_date(user['expire_at'])}\n\n"
+             f"📊 <b>Трафик:</b>\n"
+             f" ├ Обычные локации - ♾️ GB\n"
+             f" └ LTE - {used_gb} / {limit_gb} GB\n\n"
+             f"📱 <b>Лимит устройств:</b> {user['hwid_device_limit']}",
+        parse_mode="HTML",
+        reply_markup=profile_keyboard(user['subscription_url']),
+        disable_web_page_preview=True
+    )
+
+    await callback.answer("✅ Устройство удалено")

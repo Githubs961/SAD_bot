@@ -13,6 +13,7 @@ TRAFFIC_SEC: int = 1800 # 30 мин
 # ЧАСТОТА ПРОВЕРКИ ПЛАТЕЖА в сек
 PAYMENT_SEC: int = 600  #10 мин
 
+
 # id НОДЫ и id СКВАДЫ для подсчета трафика LTE
 LTE_NODE_UUID = '5f201f0b-2148-4045-8941-55c1a50f56c3'
 SQUAD_ID = "27577928-dd80-4491-b109-880cdc1ecb4f"
@@ -24,6 +25,7 @@ SQUADS : list = [
           "ecb4eace-49a3-4bdc-b9a7-190500b40e71",#Яндекс
           "a431433a-cee8-47fc-bbb6-33c419331a94", #Нидерланды Xorek
           "27577928-dd80-4491-b109-880cdc1ecb4f"] #Финляндия U1 Обход
+
 
 LEXICON_COMMANDS: dict[str, str] = {
     '/start': 'Начало работы с ботом',

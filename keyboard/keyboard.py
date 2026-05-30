@@ -57,12 +57,48 @@ def profile_keyboard(sub_url):
 
 
 # Инлайн клавиатура - Мои устройства
-def devices_keyboard():
-    return InlineKeyboardMarkup(
+def devices_keyboard(devices):
+    keyboard = []
+
+    for dev in devices:
+        keyboard.append([
+            InlineKeyboardButton(
+                text=f"❌ Удалить 📱 {dev.device_model}",
+                callback_data=f"confirm_delete:{dev.hwid}"
+            )
+        ])
+
+    keyboard.append([
+        InlineKeyboardButton(
+            text="⬅️ Назад",
+            callback_data="back_to_profile"
+        )
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+# Инлайн клавиатура - Удалить устройство?
+def delite_device(hwid):
+    keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_profile")]
+            [
+                InlineKeyboardButton(
+                    text="✅ Удалить",
+                    callback_data=f"delete_device:{hwid}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⬅️ Отмена",
+                    callback_data="my_devices"
+                )
+            ]
         ]
     )
+    return keyboard
+
+
 
 # Инлайн клавиатура - Инструкция
 def instruction_keyboard(step: int):
@@ -95,4 +131,3 @@ def instruction_keyboard(step: int):
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
-# Инлайн клавиатура - Мои устройства

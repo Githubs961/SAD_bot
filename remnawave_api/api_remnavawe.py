@@ -16,7 +16,7 @@ from remnawave.models import (UsersResponseDto,
                               TelegramUserResponseDto,
                               HwidUserDeviceDto,
                               UpdateUserRequestDto,
-                              GetBandwidthStatsResponseDto)
+                              GetBandwidthStatsResponseDto, HWIDDeleteRequest)
 
 from lexicon.lexicon import SQUADS, LTE_NODE_UUID
 
@@ -237,7 +237,21 @@ async def get_node_user_stats():
 
 
 
+# Удаление устройства пользователя
+async def delete_user_device(telegram_id: str, user_uuid: str, hwid: str) -> bool:
+    try:
+        await remnawave.hwid.delete_hwid_to_user(
+            HWIDDeleteRequest(
+                user_uuid=user_uuid,
+                hwid=hwid
+            )
+        )
 
+        return True
+
+    except Exception as e:
+        print(f"delete_user_device error: {e}")
+        return False
 
 
 
@@ -263,10 +277,14 @@ async def main():
 
 
 
-    # devices: HwidUserDeviceDto = await remnawave.hwid.get_hwid_user('7c2738ca-dce1-44b3-8bcb-6a2b000ee217')
+    devices: HwidUserDeviceDto = await remnawave.hwid.get_hwid_user('104b38db-77b8-4991-862b-86ecd31ab3ab')
+    devices2: HwidUserDeviceDto = await remnawave.hwid.delete_hwid_to_user(HWIDDeleteRequest(
+                user_uuid=user["uuid"],
+                hwid='awyfqkhvbx6ls3r3'
+            ))
+    print(devices.devices)
+    print(len(devices.devices))
 
-    # print(devices.devices)
-    # print(len(devices.devices))
 
 
 
