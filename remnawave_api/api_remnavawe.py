@@ -213,9 +213,9 @@ def format_expire_date(expire_str: datetime, local_offset: int = 3) -> str:
 
 
 # Получение трафика на ноде
-async def get_node_user_stats():
-    uuid = LTE_NODE_UUID   # id ноды для LTE
-    url = f"https://panelsubarikvpn.mooo.com/api/bandwidth-stats/nodes/{uuid}/users"
+async def get_node_user_stats(node_uuid):
+    #uuid = LTE_NODE_UUID   # id ноды для LTE
+    url = f"https://panelsubarikvpn.mooo.com/api/bandwidth-stats/nodes/{node_uuid}/users"
 
     today = datetime.utcnow().date()
     start = today - timedelta(days=1)
@@ -231,7 +231,9 @@ async def get_node_user_stats():
     }
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(url, params=params, headers=headers, cookies={secret_name: secret_value}) as resp:
+        async with session.get(url, params=params,
+                                    headers=headers,
+                                    cookies={secret_name: secret_value}) as resp:
             data = await resp.json()
             return data["response"]["topUsers"]
 

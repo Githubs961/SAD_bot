@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from aiogram import Bot
 
 from database import get_db_connection, db_lock
-from lexicon.lexicon import TRAFFIC_SEC, SQUAD_ID
+from lexicon.lexicon import TRAFFIC_SEC, SQUAD_ID, LTE_NODE_UUID
 from remnawave_api.api_remnavawe import get_node_user_stats, remnawave
 from database import get_db_connection
 from remnawave.models import UpdateUserRequestDto
@@ -14,94 +14,112 @@ from remnawave.models import UpdateUserRequestDto
 
 # Обновление статистики трафика
 async def update_traffic():
-    # Сбор статистики трафика на ноде
-    users_stats = await get_node_user_stats()
 
-    to_disable = set()
-    now = datetime.utcnow()
+    # собираем статистику со всех LTE нод
+    all_stats = {}
 
-    async with db_lock:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # ✅ 1. создаём map один раз
-        cursor.execute("SELECT user_id, username FROM users")
-        users_map = {row["username"]: row["user_id"] for row in cursor.fetchall()}
+    for node_uuid in LTE_NODE_UUID:
+        users_stats = await get_node_user_stats(node_uuid)
 
         for stat in users_stats:
             username = stat["username"]
             total = stat["total"]
 
+            # суммируем трафик пользователя со всех нод
+            all_stats[username] = all_stats.get(username, 0) + total
+
+    to_disable = set()
+    now = datetime.utcnow()
+    print(all_stats)
+    async with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT user_id, username FROM users")
+        users_map = {
+            row["username"]: row["user_id"]
+            for row in cursor.fetchall()
+        }
+
+        for username, total in all_stats.items():
+
             user_id = users_map.get(username)
+
             if not user_id:
                 continue
 
-            # ✅ 2. берём трафик (только активные)
             cursor.execute("""
-                SELECT * FROM user_traffic 
-                WHERE user_id = ? AND is_active = 1
+                SELECT *
+                FROM user_traffic
+                WHERE user_id = ?
+                AND is_active = 1
             """, (user_id,))
 
             traffic = cursor.fetchone()
+
             if not traffic:
                 continue
 
-            # -----------------------------
-            # 🔁 3. ПРОВЕРКА ПЕРИОДА
-            # -----------------------------
-            period_end = datetime.fromisoformat(traffic["period_end"])
+            # новый период
+            period_end = datetime.fromisoformat(
+                traffic["period_end"]
+            )
 
             if now >= period_end:
+
                 print(f"🔄 Новый период для {user_id}")
 
                 new_end = now + timedelta(days=30)
 
                 cursor.execute("""
-                            UPDATE user_traffic
-                            SET used_bytes = 0,
-                                period_start = ?,
-                                period_end = ?,
-                                last_total_bytes = ?,  -- 🔥 фиксируем текущее значение API
-                                updated_at = ?,
-                                is_active = 1
-                            WHERE user_id = ?
-                        """, (
+                    UPDATE user_traffic
+                    SET used_bytes = 0,
+                        period_start = ?,
+                        period_end = ?,
+                        last_total_bytes = ?,
+                        updated_at = ?,
+                        is_active = 1
+                    WHERE user_id = ?
+                """, (
                     now.isoformat(),
                     new_end.isoformat(),
-                    total,  # ❗ ВАЖНО
+                    total,
                     now.isoformat(),
                     user_id
                 ))
 
-                continue  # 👉 идём к следующему пользователю
+                continue
 
-            # СЧИТАЕМ ДЕЛЬТУ
+            # считаем дельту
             last_total = traffic["last_total_bytes"]
 
             delta = total - last_total
+
             if delta < 0:
                 delta = 0
 
             new_used = traffic["used_bytes"] + delta
 
-            # ОБНОВЛЯЕМ ТРАФИК
-            cursor.execute('''
+            cursor.execute("""
                 UPDATE user_traffic
                 SET used_bytes = ?,
                     last_total_bytes = ?,
                     updated_at = ?
                 WHERE user_id = ?
-            ''', (
+            """, (
                 new_used,
                 total,
-                datetime.utcnow().isoformat(),
+                now.isoformat(),
                 user_id
             ))
 
-            # 🚨 ПРОВЕРКА ЛИМИТА
+            # превышен лимит
             if new_used >= traffic["traffic_limit"]:
 
-                print(f"🚫 Пользователь {user_id} превысил лимит")
+                print(
+                    f"🚫 Пользователь {user_id} превысил лимит"
+                )
+
                 to_disable.add(user_id)
 
                 cursor.execute("""
@@ -113,9 +131,11 @@ async def update_traffic():
         conn.commit()
         conn.close()
 
-    # ✅ вне lock
+    # отключаем после закрытия БД
     for user_id in to_disable:
         await disable_user_squad(user_id)
+
+
 
 
 
