@@ -198,7 +198,7 @@ async def referral_menu(callback: CallbackQuery):
     # Получаем статистику через отдельную функцию
     stats = await get_referral_stats(tg_id)
 
-    referral_link = f"https://t.me/Sad_VPNbot?start=ref_{tg_id}"
+    referral_link = f"https://t.me/SADNetwork_bot?start=ref_{tg_id}"
 
     text = (
         f"🎁 <b>Реферальная программа</b>\n\n"
