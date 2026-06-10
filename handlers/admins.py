@@ -116,54 +116,64 @@ async def db_check(message: Message):
 
 
 # Отправка сообщения всем пользователям
-@router.message(Command("message"),admin_filter)
+@router.message(Command("message"), admin_filter)
 async def broadcast(message: Message):
-
-
-
-    # текст после команды
     text = message.text.replace("/message", "").strip()
 
     if not text:
-        await message.answer(
-            "❌ Укажите текст\n\n"
-            "/message Ваш текст"
-        )
+        await message.answer("❌ Укажите текст рассылки:\n\n`/message Ваш текст`", parse_mode="Markdown")
         return
 
-    await message.answer("📨 Начинаю рассылку...")
+    await message.answer("📨 Запускаю рассылку...")
 
     success = 0
     failed = 0
+    blocked = 0
+    total = 0
 
     try:
-        users = await remnawave.users.get_all_users()
+        # Получаем всех пользователей из Remnawave
+        users_response = await remnawave.users.get_all_users()
+        users = users_response.users  # это список UserResponseDto
 
-        for user in users.users:
+        total = len(users)
+        await message.answer(f"Найдено пользователей: {total}\nНачинаю отправку...")
+
+        for user in users:
+            if not user.telegram_id:
+                continue
 
             try:
-                if not user.telegram_id:
-                    continue
-
                 await message.bot.send_message(
                     chat_id=int(user.telegram_id),
-                    text=text
+                    text=text,
+                    parse_mode="HTML",
+                    disable_web_page_preview=True
                 )
-
                 success += 1
-
-                # антифлуд Telegram
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.12)  # антифлуд
 
             except Exception as e:
-                failed += 1
-                print(f"message error {user.telegram_id}: {e}")
+                error_str = str(e).lower()
+                if any(word in error_str for word in ["blocked", "forbidden", "chat not found", "deactivated"]):
+                    blocked += 1
+                else:
+                    failed += 1
+                print(f"Не отправлено {user.telegram_id}: {e}")
+
+                if "flood" in error_str:
+                    await asyncio.sleep(5)
 
         await message.answer(
-            f"✅ Рассылка завершена\n\n"
-            f"Успешно: {success}\n"
-            f"Ошибок: {failed}"
+            f"✅ <b>Рассылка завершена!</b>\n\n"
+            f"Всего: {total}\n"
+            f"✅ Доставлено: {success}\n"
+            f"🚫 Заблокировали бота: {blocked}\n"
+            f"❌ Другие ошибки: {failed}",
+            parse_mode="HTML"
         )
 
     except Exception as e:
-        await message.answer(f"❌ Ошибка: {e}")
+        await message.answer(f"❌ Критическая ошибка: {e}")
+        print(f"Broadcast error: {e}")
+
