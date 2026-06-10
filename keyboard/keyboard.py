@@ -51,8 +51,9 @@ def profile_keyboard(sub_url):
         inline_keyboard=[
             [InlineKeyboardButton(text="🔗 Скопировать ссылку", copy_text=types.CopyTextButton(text=sub_url))],
             [InlineKeyboardButton(text="👤 Страница подписки", callback_data="add_device",url=sub_url)],
-            [InlineKeyboardButton(text="🎁 Пригласить друга",callback_data="referral")],
-            [InlineKeyboardButton(text="📱 Мои устройства", callback_data="my_devices")]
+            [InlineKeyboardButton(text="📱 Мои устройства", callback_data="my_devices")],
+            [InlineKeyboardButton(text="🎁 Пригласить друга",callback_data="referral")]
+
         ]
     )
 

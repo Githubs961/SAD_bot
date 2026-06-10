@@ -1,5 +1,6 @@
 from aiogram import Router, types, Bot
-from aiogram.types import Message, CallbackQuery, PreCheckoutQuery, LabeledPrice
+from aiogram.types import Message, CallbackQuery, PreCheckoutQuery, LabeledPrice, InlineKeyboardButton, \
+    InlineKeyboardMarkup
 from aiogram.filters import Command, CommandStart, or_f, CommandObject
 from aiogram import F
 from datetime import datetime
@@ -209,9 +210,22 @@ async def referral_menu(callback: CallbackQuery):
         f"✅ Получено наград: <b>{stats['rewarded']}</b>"
     )
 
+    # Создаём клавиатуру с кнопкой Назад
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="⬅️ Назад",
+                    callback_data="back_to_profile"
+                )
+            ]
+        ]
+    )
+
     await callback.message.edit_text(
         text=text,
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_markup=keyboard
     )
     await callback.answer()
 
