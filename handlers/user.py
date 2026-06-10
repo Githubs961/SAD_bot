@@ -5,7 +5,7 @@ from aiogram import F
 from datetime import datetime
 from aiogram.utils.markdown import hlink
 
-from database import save_user, get_user_traffic
+from database import save_user, get_user_traffic, save_referral, get_referral_stats
 from remnawave_api.api_remnavawe import (get_user,
                                          create_new_user,
                                          format_expire_date, delete_user_device, invalidate_user_cache)
@@ -18,18 +18,38 @@ from services.services import init_traffic
 router = Router()
 
 
+
+#Обработка команды Start
 @router.message(CommandStart())
-async def process_start_command(message: Message):
-   # if await is_admin(message.chat.id):
-        await message.answer(text=LEXICON_RU['/start'],
-                             reply_markup=keyboard,disable_web_page_preview=True)
+async def process_start_command(message: Message,
+                                command: CommandObject):
+    ref_code = command.args
+
+    if ref_code and ref_code.startswith("ref_"):
+
+        try:
+            referrer_id = int(ref_code.replace("ref_", ""))
+            referred_id = message.from_user.id
+
+            if await save_referral(
+                    referrer_id=referrer_id,
+                    referred_id=referred_id
+            ):
+                print(
+                    f"🎁 Новый реферал "
+                    f"{referrer_id} -> {referred_id}"
+                )
+
+        except Exception as e:
+            print(f"Referral error: {e}")
+
+    await message.answer(
+        text=LEXICON_RU['/start'],
+        reply_markup=keyboard,
+        disable_web_page_preview=True
+    )
 
 
-# @router.message(Command(commands='help'))
-# async def process_help_command(message: Message):
-#     await message.answer(text=LEXICON_RU['/help'],
-#                          disable_web_page_preview=True
-#                          )
 
 
 
@@ -88,6 +108,7 @@ async def show_profile(message: Message):
                                   '🔒 Получите доступ')
 
 
+
 # Обработчик кнопки "Назад" в личный кабинет
 @router.callback_query(F.data == "back_to_profile")
 async def back_to_profile(callback: CallbackQuery):
@@ -124,6 +145,7 @@ async def back_to_profile(callback: CallbackQuery):
     await callback.answer()
 
 
+
 @router.message(or_f(F.text == 'ℹ️ Инструкция',Command('help')))
 async def manual(message: Message):
     await message.answer(text= f'{INSTRUCTION["step_1"]}',
@@ -131,6 +153,8 @@ async def manual(message: Message):
                          reply_markup=instruction_keyboard(1),
                          disable_web_page_preview=True
                          )
+
+
 
 # Обработка нажатий на клавиатуру инструкции
 @router.callback_query(F.data.startswith("instruction:"))
@@ -163,6 +187,35 @@ async def click_back(callback: CallbackQuery):
                                      reply_markup=sub_keyboard
                                      )
     await callback.answer()
+
+
+
+# 🎁 Реферальная программа
+@router.callback_query(F.data == "referral")
+async def referral_menu(callback: CallbackQuery):
+    tg_id = callback.from_user.id
+
+    # Получаем статистику через отдельную функцию
+    stats = await get_referral_stats(tg_id)
+
+    referral_link = f"https://t.me/Sad_VPNbot?start=ref_{tg_id}"
+
+    text = (
+        f"🎁 <b>Реферальная программа</b>\n\n"
+        f"Пригласите друга и получите +15 дней подписки после его первой оплаты.\n\n"
+        f"🔗 Ваша ссылка:\n\n"
+        f"<code>{referral_link}</code>\n\n"
+        f"👥 Приглашено друзей: <b>{stats['total']}</b>\n"
+        f"✅ Получено наград: <b>{stats['rewarded']}</b>"
+    )
+
+    await callback.message.edit_text(
+        text=text,
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
 
 
 # обработка кнопки "Мои устройства"

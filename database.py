@@ -2,6 +2,9 @@ import sqlite3
 import asyncio
 from datetime import datetime, timedelta
 from pathlib import Path
+
+from aiogram import Bot
+
 from lexicon.lexicon import PAY_STARS
 
 
@@ -64,6 +67,17 @@ def init_db():
             uuid TEXT
         )
     ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS referrals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            referrer_id INTEGER NOT NULL,
+            referred_id INTEGER NOT NULL UNIQUE,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            rewarded INTEGER DEFAULT 0
+            )
+        ''')
+
 
     conn.commit()
     conn.close()
@@ -224,3 +238,131 @@ def get_user_traffic(user_id: int):
 
     return row
 
+
+#Реферальная система - Сохранение и проверки
+async def save_referral(referrer_id: int, referred_id: int) -> bool:
+    """Сохраняет реферала. Возвращает True, если запись создана."""
+    if referrer_id == referred_id:
+        return False
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Проверка, что пользователь ещё не был приглашён
+        cursor.execute("SELECT 1 FROM referrals WHERE referred_id = ?", (referred_id,))
+        if cursor.fetchone():
+            return False
+
+        cursor.execute("""
+            INSERT INTO referrals (referrer_id, referred_id, rewarded)
+            VALUES (?, ?, 0)
+        """, (referrer_id, referred_id))
+
+        conn.commit()
+        return True
+
+    except Exception as e:
+        print(f"Referral save error: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+# ====================== РЕФЕРАЛЬНАЯ СИСТЕМА ======================
+
+async def process_referral_reward(referred_id: int, bot: Bot = None) -> bool:
+    """
+    Начисляет +15 дней рефереру после первой оплаты referred_id.
+    Возвращает True, если награда выдана.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT referrer_id 
+            FROM referrals 
+            WHERE referred_id = ? AND rewarded = 0
+        """, (referred_id,))
+
+        row = cursor.fetchone()
+        if not row:
+            return False  # уже награждён или реферала нет
+
+        referrer_id = row[0]
+
+        # === Начисляем +15 дней рефереру через API ===
+        from remnawave_api.api_remnavawe import add_days  # импортируем здесь, чтобы избежать циклического импорта
+
+        success = await add_days(telegram_id=str(referrer_id), days=15)
+
+        if success:
+            # Помечаем как rewarded
+            cursor.execute("""
+                UPDATE referrals 
+                SET rewarded = 1 
+                WHERE referred_id = ?
+            """, (referred_id,))
+            conn.commit()
+
+            # Уведомляем реферера
+            if bot:
+                try:
+                    await bot.send_message(
+                        chat_id=referrer_id,
+                        text="🎁 <b>Реферальная награда!</b>\n\n"
+                             "Ваш друг оплатил подписку.\n"
+                             "Вам начислено +15 дней к подписке!",
+                        parse_mode="HTML"
+                    )
+                except:
+                    pass  # пользователь мог заблокировать бота
+
+            print(f"✅ Реферальная награда выдана: {referrer_id} (+15 дней)")
+            return True
+
+        else:
+            print(f"❌ Не удалось начислить реферальные дни для {referrer_id}")
+            return False
+
+    except Exception as e:
+        print(f"❌ process_referral_reward error: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+
+#Статистика рефералов (для Личного кабинета)
+async def get_referral_stats(user_id: int) -> dict:
+    """
+    Возвращает статистику рефералов пользователя.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Сколько всего пригласил
+        cursor.execute("""
+            SELECT COUNT(*) FROM referrals WHERE referrer_id = ?
+        """, (user_id,))
+        total_refs = cursor.fetchone()[0]
+
+        # Сколько уже принесли награду
+        cursor.execute("""
+            SELECT COUNT(*) FROM referrals 
+            WHERE referrer_id = ? AND rewarded = 1
+        """, (user_id,))
+        rewarded = cursor.fetchone()[0]
+
+        return {
+            "total": total_refs,
+            "rewarded": rewarded
+        }
+
+    except Exception as e:
+        print(f"get_referral_stats error: {e}")
+        return {"total": 0, "rewarded": 0}
+    finally:
+        conn.close()

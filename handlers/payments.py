@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, LabeledPrice, PreCheckoutQuery, Message
 from aiogram.filters import Command, CommandObject
 from aiogram.utils.markdown import hlink
 import traceback
-from database import save_payment, get_active_payment, update_db, get_db_connection, db_lock
+from database import save_payment, get_active_payment, update_db, get_db_connection, db_lock, process_referral_reward
 from handlers.admins import admin_filter
 from keyboard.keyboard import sub_keyboard
 from lexicon.lexicon import PAY_STARS, PLANS, PAY_SBP, DAYS, PAYMENT_STATUS_MESSAGES, KONF, SOGL, PAYMENT_SEC
@@ -86,6 +86,9 @@ async def successful_payment(message: Message):
 
         # 2. Выдаём подписку
         success = await add_days(telegram_id=str(user_id),days=DAYS[plan_key]) # количество дней добавленных к подписке
+
+        # Проверка реферала
+        await process_referral_reward(referred_id=user_id, bot=message.bot)
 
         async with db_lock:
             # 3. Обнуляем трафик пользователю
@@ -223,10 +226,10 @@ async def check_payment(callback: CallbackQuery):
         plan_key = row["plan_key"]
 
         # Добавляем подписку
-        await add_days(
-            telegram_id=str(user_id),
-            days=DAYS[plan_key]
-        )
+        await add_days(telegram_id=str(user_id),days=DAYS[plan_key])
+
+        # ←←← Проверяем реферала
+        await process_referral_reward(referred_id=user_id, bot=callback.bot)
 
         async with db_lock:
             #Обнуляем трафик пользователю
@@ -293,6 +296,8 @@ async def auto_check_payments(bot):
                         telegram_id=str(p["user_id"]),
                         days=DAYS[p["plan_key"]]
                     )
+                    # ←←← Проверка реферала
+                    await process_referral_reward(referred_id=p["user_id"], bot=bot)
 
                     async with db_lock:
                         # Обнуляем трафик пользователю

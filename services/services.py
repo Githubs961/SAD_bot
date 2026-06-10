@@ -30,7 +30,7 @@ async def update_traffic():
 
     to_disable = set()
     now = datetime.utcnow()
-    print(all_stats)
+
     async with db_lock:
         conn = get_db_connection()
         cursor = conn.cursor()
