@@ -74,10 +74,10 @@ async def get_user(telegram_id: str) -> Optional[dict]:
         # Преобразуем в чистый dict
         user = response.root[0].model_dump()
 
-        # так же получаем информацию об устройствах пользователя
-        devices: HwidUserDeviceDto = await remnawave.hwid.get_hwid_user(str(user['uuid']))
-        # и добавляем устройства к данным о пользователе
-        user['devices'] = devices.devices
+        # # так же получаем информацию об устройствах пользователя
+        # devices: HwidUserDeviceDto = await remnawave.hwid.get_hwid_user(str(user['uuid']))
+        # # и добавляем устройства к данным о пользователе
+        # user['devices'] = devices.devices
 
         # Сохраняем в кэш
         async with lock:
@@ -107,36 +107,79 @@ async def create_new_user(username: str,
                       active_internal_squads: list = None,
                       note: str = "",
                       hwid_limit: int = 3):
+    # Сначала пытаемся найти пользователя по telegram_id
+    try:
+        existing = await remnawave.users.get_users_by_telegram_id(telegram_id)
+        if existing and existing.root:
+            user_data = existing.root[0].model_dump()
+            print(f"✅ Пользователь уже существует: {user_data['username']}")
+            return {
+                "uuid": str(user_data["uuid"]),
+                "username": user_data["username"],
+                "subscription_url": user_data.get("subscription_url")
+            }
+    except Exception as e:
+        print(f"Пользователь не найден, создаём нового: {e}")
 
-        # Рассчитываем дату истечения
+    # Если не нашли — создаём
+    try:
         expire_at = datetime.utcnow() + timedelta(days=expire_days)
 
-
         await remnawave.users.create_user(CreateUserRequestDto(
-            username=f'{username}_{telegram_id}', # нужно уникольное имя комбинируем ник и tg_id
-            active_internal_squads=SQUADS, #СКВАДЫ Пользователя
-            expire_at=expire_at,  # обязательное поле
+            username=f"{username or 'user'}_{telegram_id}",  # уникальное имя
             telegram_id=telegram_id,
-            email=email,
-            description='Пробный период 3 дня',
-            traffic_limit_bytes=traffic_limit_bytes * 1024 * 1024 * 1024 if traffic_limit_bytes > 0 else 0,  # в байтах
+            expire_at=expire_at,
+            active_internal_squads=SQUADS,
+            description="Пробный период 3 дня",
+            traffic_limit_bytes=traffic_limit_bytes * 1024 * 1024 * 1024,
             hwid_device_limit=hwid_limit,
             status="ACTIVE",
-            traffic_limit_strategy="MONTH"))
+            traffic_limit_strategy="MONTH"
+        ))
 
-        # 🔥 получаем пользователя
-        user : TelegramUserResponseDto = await remnawave.users.get_users_by_telegram_id(telegram_id)
+        # После создания снова получаем пользователя
+        user = await remnawave.users.get_users_by_telegram_id(telegram_id)
+        if user and user.root:
+            user_data = user.root[0].model_dump()
+            return {
+                "uuid": str(user_data["uuid"]),
+                "username": user_data["username"],
+                "subscription_url": user_data.get("subscription_url")
+            }
+    except Exception as e:
+        print(f"Ошибка создания пользователя: {e}")
+        return None
 
-        if not user:
-            return None
+    return None
 
-        user_data = user.root[0].model_dump()
-
-        return {
-            "uuid": str(user_data["uuid"]),
-            "username": user_data["username"],
-            "subscription_url": user_data["subscription_url"]
-        }
+        # # Рассчитываем дату истечения
+        # expire_at = datetime.utcnow() + timedelta(days=expire_days)
+        #
+        # await remnawave.users.create_user(CreateUserRequestDto(
+        #     username=f'{username}_{telegram_id}', # нужно уникольное имя комбинируем ник и tg_id
+        #     active_internal_squads=SQUADS, #СКВАДЫ Пользователя
+        #     expire_at=expire_at,  # обязательное поле
+        #     telegram_id=telegram_id,
+        #     email=email,
+        #     description='Пробный период 3 дня',
+        #     traffic_limit_bytes=traffic_limit_bytes * 1024 * 1024 * 1024 if traffic_limit_bytes > 0 else 0,  # в байтах
+        #     hwid_device_limit=hwid_limit,
+        #     status="ACTIVE",
+        #     traffic_limit_strategy="MONTH"))
+        #
+        # # 🔥 получаем пользователя
+        # user : TelegramUserResponseDto = await remnawave.users.get_users_by_telegram_id(telegram_id)
+        #
+        # if not user:
+        #     return None
+        #
+        # user_data = user.root[0].model_dump()
+        #
+        # return {
+        #     "uuid": str(user_data["uuid"]),
+        #     "username": user_data["username"],
+        #     "subscription_url": user_data["subscription_url"]
+        # }
 
 
 
@@ -215,7 +258,7 @@ def format_expire_date(expire_str: datetime, local_offset: int = 3) -> str:
 # Получение трафика на ноде
 async def get_node_user_stats(node_uuid):
     #uuid = LTE_NODE_UUID   # id ноды для LTE
-    url = f"https://panelsubarikvpn.mooo.com/api/bandwidth-stats/nodes/{node_uuid}/users"
+    url = f"https://newpan.myproject123.site/api/bandwidth-stats/nodes/{node_uuid}/users"
 
     today = datetime.utcnow().date()
     start = today - timedelta(days=1)
