@@ -60,45 +60,69 @@ def profile_keyboard(sub_url):
 
 # Инлайн клавиатура - Мои устройства
 def devices_keyboard(devices):
-    keyboard = []
+    """
+        Создаёт клавиатуру со списком устройств для удаления
+        """
+    buttons = []
 
     for dev in devices:
-        keyboard.append([
-            InlineKeyboardButton(
-                text=f"❌ Удалить 📱 {dev.device_model}",
-                callback_data=f"confirm_delete:{dev.hwid}"
-            )
-        ])
+        # 🔥 ИСПРАВЛЕНО: обращаемся по ключам
+        device_model = dev.get('deviceModel', 'Unknown') or dev.get('device_model', 'Unknown')
+        hwid = dev.get('hwid', '')
 
-    keyboard.append([
+        if hwid:
+            buttons.append([
+                InlineKeyboardButton(
+                    text=f"❌ {device_model[:20]}",
+                    callback_data=f"confirm_delete:{hwid}"
+                )
+            ])
+
+    # Кнопка "Назад"
+    buttons.append([
         InlineKeyboardButton(
             text="⬅️ Назад",
             callback_data="back_to_profile"
         )
     ])
 
-    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 # Инлайн клавиатура - Удалить устройство?
-def delite_device(hwid):
-    keyboard = InlineKeyboardMarkup(
+def delete_device_keyboard(hwid):
+    # keyboard = InlineKeyboardMarkup(
+    #     inline_keyboard=[
+    #         [
+    #             InlineKeyboardButton(
+    #                 text="✅ Удалить",
+    #                 callback_data=f"delete_device:{hwid}"
+    #             )
+    #         ],
+    #         [
+    #             InlineKeyboardButton(
+    #                 text="⬅️ Отмена",
+    #                 callback_data="my_devices"
+    #             )
+    #         ]
+    #     ]
+    # )
+    # return keyboard
+    """Клавиатура для подтверждения удаления устройства"""
+    return InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="✅ Удалить",
+                    text="✅ Да, удалить",
                     callback_data=f"delete_device:{hwid}"
-                )
-            ],
-            [
+                ),
                 InlineKeyboardButton(
-                    text="⬅️ Отмена",
-                    callback_data="my_devices"
+                    text="❌ Отмена",
+                    callback_data="back_to_profile"
                 )
             ]
         ]
     )
-    return keyboard
 
 
 

@@ -11,7 +11,7 @@ from remnawave_api.api_remnavawe import (get_user,
                                          create_new_user,
                                          format_expire_date, delete_user_device, invalidate_user_cache)
 from keyboard.keyboard import keyboard, sub_keyboard, pay_keyboard, profile_keyboard, instruction_keyboard, \
-    devices_keyboard, delite_device
+    devices_keyboard, delete_device_keyboard
 from lexicon.lexicon import LEXICON_RU, PLANS, PAY_STARS, INSTRUCTION
 from services.services import init_traffic
 
@@ -243,84 +243,98 @@ async def click_add_device(callback: CallbackQuery):
     if devices: # не верная проверка на устройства нужно перепроверить
         text = '📱 <b>Ваши устройства</b>\n\n'
         for i, dev in enumerate(devices,1): # dev это объект поэтому обращаемся через . а не  dev['device_model']
-            text += f"<b>{i}. {str(dev.device_model)}</b>\n"
-            text += f"   Приложение: {dev.user_agent}\n"
-            text += f"   Добавлено: {dev.created_at.strftime('%d.%m.%Y %H:%M')}\n\n"
-        await callback.message.edit_text(text=text,parse_mode="HTML", reply_markup=devices_keyboard(devices)) #добавить клавиатуру с устр-вами для удаления
+            device_model = dev.get('deviceModel', 'Unknown') or dev.get('device_model', 'Unknown')
+            user_agent = dev.get('userAgent', 'Unknown') or dev.get('user_agent', 'Unknown')
+            created_at = dev.get('createdAt', None) or dev.get('created_at', None)
 
-    await callback.answer()
+            # Форматируем дату
+            if created_at:
+                try:
+                    if isinstance(created_at, str):
+                        created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    created_str = created_at.strftime('%d.%m.%Y %H:%M')
+                except:
+                    created_str = str(created_at)
+            else:
+                created_str = 'Неизвестно'
+
+            text += f"<b>{i}. {device_model}</b>\n"
+            text += f"   Приложение: {user_agent[:30]}...\n" if len(
+                user_agent) > 30 else f"   Приложение: {user_agent}\n"
+            text += f"   Добавлено: {created_str}\n\n"
+
+        await callback.message.edit_text(
+            text=text,
+            parse_mode="HTML",
+            reply_markup= devices_keyboard(devices)
+        )
+        await callback.answer()
 
 
 
 # Подтверждение удаления устройства
 @router.callback_query(F.data.startswith("confirm_delete:"))
 async def confirm_delete_device(callback: CallbackQuery):
-
     hwid = callback.data.split(":", 1)[1]
 
     user = await get_user(str(callback.from_user.id))
 
+    if not user:
+        await callback.answer("Пользователь не найден", show_alert=True)
+        return
+
+    # 🔥 ИСПРАВЛЕНО: поиск по словарю
     device = next(
-        (d for d in user["devices"] if d.hwid == hwid),
+        (d for d in user.get("devices", []) if d.get("hwid") == hwid),
         None
     )
 
     if not device:
-        await callback.answer(
-            "Устройство не найдено",
-            show_alert=True
-        )
+        await callback.answer("Устройство не найдено", show_alert=True)
         return
 
-
+    # 🔥 ИСПРАВЛЕНО: обращаемся по ключам
+    device_model = device.get('deviceModel', 'Unknown') or device.get('device_model', 'Unknown')
+    platform = device.get('platform', 'Unknown')
 
     await callback.message.edit_text(
         text=(
             f"⚠️ <b>Удалить устройство?</b>\n\n"
-            f"📱 {device.device_model}\n"
-            f"🖥 {device.platform}\n\n"
-            f"После удаления устройство потребуется "
-            f"авторизовать заново."
+            f"📱 {device_model}\n"
+            f"🖥 {platform}\n\n"
         ),
         parse_mode="HTML",
-        reply_markup= delite_device(hwid)
+        reply_markup=delete_device_keyboard(hwid)  # Исправлено название функции
     )
-
     await callback.answer()
 
 
 # Удаление устройства и возврат в Личный кабинет
 @router.callback_query(F.data.startswith("delete_device:"))
 async def delete_device(callback: CallbackQuery):
-
     hwid = callback.data.split(":", 1)[1]
 
     user = await get_user(str(callback.from_user.id))
 
+    if not user:
+        await callback.answer("Пользователь не найден", show_alert=True)
+        return
 
-    #Вызываем API remnawave
+    # Вызываем API remnawave
     success = await delete_user_device(
         telegram_id=str(callback.from_user.id),
         user_uuid=user["uuid"],
         hwid=hwid
     )
-    #
-    if success:
-        await callback.answer(
-            "✅ Устройство удалено",
-            show_alert=True
-        )
 
-    else:
-        await callback.answer(
-            "❌ Ошибка удаления устройства",
-            show_alert=True
-        )
+    if not success:
+        await callback.answer("❌ Ошибка удаления устройства", show_alert=True)
+        return
 
-        # очищаем кэш
+    # Очищаем кэш
     await invalidate_user_cache(str(callback.from_user.id))
 
-    # получаем обновлённого пользователя
+    # Получаем обновлённого пользователя
     user = await get_user(str(callback.from_user.id))
 
     traffic = get_user_traffic(callback.from_user.id)

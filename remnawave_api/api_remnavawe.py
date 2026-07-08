@@ -40,7 +40,7 @@ user_cache: Dict[str, Dict] = {}
 cache_time: Dict[str, float] = {}
 locks: Dict[str, asyncio.Lock] = {}  # защита от одновременной записи
 
-TTL_SECONDS = 600 # 10 минут — хранится кэш в сек
+TTL_SECONDS = 300 # 5 минут — хранится кэш в сек
 
 
 # Функция для очистки кэша (можно вызывать после создания/продления подписки)
@@ -78,6 +78,8 @@ async def get_user(telegram_id: str) -> Optional[dict]:
         # devices: HwidUserDeviceDto = await remnawave.hwid.get_hwid_user(str(user['uuid']))
         # # и добавляем устройства к данным о пользователе
         # user['devices'] = devices.devices
+        devices = await get_user_devices_raw(str(user['uuid']))
+        user['devices'] = devices
 
         # Сохраняем в кэш
         async with lock:
@@ -282,6 +284,61 @@ async def get_node_user_stats(node_uuid):
 
 
 
+
+# Получение устройств пользователя
+async def get_user_devices_raw(user_uuid: str) -> list:
+    """Получает устройства через прямой запрос к API"""
+    url = f"{base_url}/api/hwid/devices/{user_uuid}"
+    headers = {"Authorization": f"Bearer {token}"}
+    cookies = {secret_name: secret_value}
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, cookies=cookies, timeout=10) as resp:
+
+                if resp.status != 200:
+                    print(f"[WARN] Ошибка: {resp.status}")
+                    return []
+
+                data = await resp.json()
+                #print(f"[DEBUG] Полный ответ API: {json.dumps(data, indent=2, default=str)}")
+
+                # Здесь вы увидите реальную структуру ответа
+                # и сможете понять, где лежат устройства
+
+                # Попробуем разные варианты извлечения
+                if isinstance(data, dict):
+                    # Вариант 1: прямой ключ "devices"
+                    if "devices" in data:
+                        devices = data["devices"]
+                        return devices
+
+                    # Вариант 2: ключ "response"
+                    if "response" in data and isinstance(data["response"], dict):
+                        if "devices" in data["response"]:
+                            devices = data["response"]["devices"]
+                            return devices
+                        if isinstance(data["response"], list):
+                            return data["response"]
+
+                    # Вариант 3: данные сами являются списком
+                    if isinstance(data, list):
+                        print(f"[DEBUG] Ответ — список устройств: {len(data)}")
+                        return data
+
+                    # Вариант 4: данные лежат в другом ключе
+                    print(f"[DEBUG] Ключи ответа: {list(data.keys())}")
+
+                # Если ничего не нашли
+                print("[WARN] Не удалось найти устройства в ответе")
+                return []
+
+    except Exception as e:
+        print(f"[ERROR] get_user_devices_raw: {e}")
+        return []
+
+
+
 # Удаление устройства пользователя
 async def delete_user_device(telegram_id: str, user_uuid: str, hwid: str) -> bool:
     try:
@@ -297,6 +354,9 @@ async def delete_user_device(telegram_id: str, user_uuid: str, hwid: str) -> boo
     except Exception as e:
         print(f"delete_user_device error: {e}")
         return False
+
+
+
 
 
 
