@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from aiogram import Bot
 
 from database import get_db_connection, db_lock
-from lexicon.lexicon import TRAFFIC_SEC, SQUAD_ID, LTE_NODE_UUID
+from lexicon.lexicon import TRAFFIC_SEC, SQUAD_ID, LTE_NODE_UUID, LIMIT_GB
 from remnawave_api.api_remnavawe import get_node_user_stats, remnawave
 from database import get_db_connection
 from remnawave.models import UpdateUserRequestDto
@@ -193,8 +193,7 @@ async def reset_traffic(user_id: int):
 
 # Лимит трафика для ноды при создании пользователя заносим в БД
 async def init_traffic(user_id: int):
-    traffic_limit_bytes = 50 * 1024 ** 3 # 50 ГБ
-
+    traffic_limit_bytes = LIMIT_GB * 1024 ** 3 # ГБ
     conn = get_db_connection()
     cursor = conn.cursor()
 
