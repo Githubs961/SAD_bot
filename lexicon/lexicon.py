@@ -18,7 +18,7 @@ PAYMENT_SEC: int = 600  #10 мин
 
 
 # id НОДЫ и id СКВАДЫ для подсчета трафика LTE
-LTE_NODE_UUID = ["5f201f0b-2148-4045-8941-55c1a50f56c3","a2fcefb8-ee25-484a-8fb9-89ef8f1145ec"]
+LTE_NODE_UUID = ["a6379337-64fd-4699-91b6-bef0c1e68402","a2fcefb8-ee25-484a-8fb9-89ef8f1145ec"]
 SQUAD_ID = "27577928-dd80-4491-b109-880cdc1ecb4f"
 
 # Сквады которые подключаются пользователю
