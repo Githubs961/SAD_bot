@@ -130,21 +130,21 @@ def delete_device_keyboard(hwid):
 def instruction_keyboard(step: int):
     buttons = []
 
-    if step > 1:
-        buttons.append(
-            InlineKeyboardButton(
-                text="⬅️ Назад",
-                callback_data=f"instruction:{step-1}"
-            )
-        )
-
-    if step < 5:
-        buttons.append(
-            InlineKeyboardButton(
-                text="➡️ Далее",
-                callback_data=f"instruction:{step+1}"
-            )
-        )
+    # if step > 1:
+    #     buttons.append(
+    #         InlineKeyboardButton(
+    #             text="⬅️ Назад",
+    #             callback_data=f"instruction:{step-1}"
+    #         )
+    #     )
+    #
+    # if step < 5:
+    #     buttons.append(
+    #         InlineKeyboardButton(
+    #             text="➡️ Далее",
+    #             callback_data=f"instruction:{step+1}"
+    #         )
+    #     )
 
     keyboard = [buttons]
     keyboard.append(
