@@ -18,7 +18,7 @@ from remnawave.models import (UsersResponseDto,
                               UpdateUserRequestDto,
                               GetBandwidthStatsResponseDto, HWIDDeleteRequest)
 
-from lexicon.lexicon import SQUADS, LTE_NODE_UUID
+from lexicon.lexicon import SQUADS, LTE_NODE_UUID, TTL_SECONDS
 
 load_dotenv()  # вызов переменных окружения, файл ".env"
 
@@ -40,7 +40,7 @@ user_cache: Dict[str, Dict] = {}
 cache_time: Dict[str, float] = {}
 locks: Dict[str, asyncio.Lock] = {}  # защита от одновременной записи
 
-TTL_SECONDS = 300 # 5 минут — хранится кэш в сек
+
 
 
 # Функция для очистки кэша (можно вызывать после создания/продления подписки)

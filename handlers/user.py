@@ -359,4 +359,4 @@ async def delete_device(callback: CallbackQuery):
         disable_web_page_preview=True
     )
 
-    await callback.answer("✅ Устройство удалено")
+    await callback.answer("✅ Устройство удалено",show_alert=True)
