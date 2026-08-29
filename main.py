@@ -42,7 +42,7 @@ async def main():
     # Удаление из БД старых платежей(PENDING)
     asyncio.create_task(expire_old_payments())
     # Автопроверка лимита трафика у пользователей
-    asyncio.create_task(traffic_worker())
+    asyncio.create_task(traffic_worker(bot))
 
 
 

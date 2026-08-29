@@ -13,7 +13,7 @@ from remnawave.models import UpdateUserRequestDto
 
 
 # Обновление статистики трафика
-async def update_traffic():
+async def update_traffic(bot: Bot):
 
     # собираем статистику со всех LTE нод
     all_stats = {}
@@ -134,16 +134,17 @@ async def update_traffic():
     # отключаем после закрытия БД
     for user_id in to_disable:
         await disable_user_squad(user_id)
+        await notify_traffic_limit(bot, user_id)
 
 
 
 
 
 # Автопроверка трафика в фоне
-async def traffic_worker():
+async def traffic_worker(bot: Bot):
     while True:
         try:
-            await update_traffic()
+            await update_traffic(bot)
             print("📊 Трафик обновлён")
         except Exception as e:
             print(f"❌ Ошибка update_traffic: {e}")
@@ -393,3 +394,23 @@ async def subscription_notify_worker(bot: Bot):
 
         # каждые 24 часа
         await asyncio.sleep(86400)
+
+
+#Уведомление пользователя о лимите LTE-трафика
+async def notify_traffic_limit(bot: Bot, user_id: int):
+    try:
+        await bot.send_message(
+            chat_id=user_id,
+            text=(
+                "⚠️ <b>LTE-трафик исчерпан</b>\n\n"
+                "Доступ к LTE временно отключён.\n\n"
+                "🔄 Чтобы обновить трафик, продлите подписку.\n"
+                "После оплаты лимит LTE будет обновлён.\n"
+            ),
+            parse_mode="HTML"
+        )
+
+        print(f"📨 Уведомление об окончании трафика отправлено {user_id}")
+
+    except Exception as e:
+        print(f"❌ Ошибка уведомления о трафике {user_id}: {e}")
