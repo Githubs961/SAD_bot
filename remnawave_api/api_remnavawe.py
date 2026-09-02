@@ -54,32 +54,40 @@ async def invalidate_user_cache(telegram_id: str):
 
 #Найти пользователя по telegram_id
 async def get_user(telegram_id: str) -> Optional[dict]:
-
     # 1. Проверяем кэш под блокировкой
     lock = locks.setdefault(telegram_id, asyncio.Lock())
+
     async with lock:
         now = datetime.utcnow().timestamp()
-        if (telegram_id in user_cache and
-                now - cache_time.get(telegram_id, 0) < TTL_SECONDS):
+
+        if (
+                telegram_id in user_cache
+                and now - cache_time.get(telegram_id, 0) < TTL_SECONDS
+        ):
             print(f"[DEBUG] Возвращаю из кэша для {telegram_id}")
             return user_cache[telegram_id]
-    # 2. Если в кэше нет или устарел — идём в Remnawave
+
+    # 2. Если кэша нет или он устарел — идём в Remnawave
     print(f"[DEBUG] Кэш устарел или пуст, иду в API для {telegram_id}")
+
+
     try:
-        response: TelegramUserResponseDto =await remnawave.users.get_users_by_telegram_id(telegram_id)
-        if not response:
+        #raise asyncio.TimeoutError("TEST: Remnawave API недоступен") #ДЛЯ ТЕСТА! НЕДОСТУПНОСТИ REMNAWAVE
+        response: TelegramUserResponseDto = (
+            await remnawave.users.get_users_by_telegram_id(telegram_id)
+        )
+
+        # Пользователь не найден
+        if not response or not response.root:
             print(f"[DEBUG] Пользователь {telegram_id} не найден в API")
             return None
 
-        # Преобразуем в чистый dict
+        # Берём первого пользователя
         user = response.root[0].model_dump()
 
-        # # так же получаем информацию об устройствах пользователя
-        # devices: HwidUserDeviceDto = await remnawave.hwid.get_hwid_user(str(user['uuid']))
-        # # и добавляем устройства к данным о пользователе
-        # user['devices'] = devices.devices
-        devices = await get_user_devices_raw(str(user['uuid']))
-        user['devices'] = devices
+        # Получаем устройства
+        devices = await get_user_devices_raw(str(user["uuid"]))
+        user["devices"] = devices
 
         # Сохраняем в кэш
         async with lock:
@@ -87,14 +95,19 @@ async def get_user(telegram_id: str) -> Optional[dict]:
             cache_time[telegram_id] = datetime.utcnow().timestamp()
 
         print(f"[DEBUG] Пользователь {telegram_id} сохранён в кэш")
-        return  user # возвращаем словарь - информация о пользователе
+
+        return user
 
     except asyncio.TimeoutError:
-        print(f"[DEBUG] Таймаут API для {telegram_id}")
-        return None
+        print(f"[ERROR] Таймаут Remnawave API для {telegram_id}")
+        raise
+
     except Exception as e:
-        print(f"Ошибка при получении пользователя {telegram_id}: {e}")
-        return None
+        print(
+            f"[ERROR] Ошибка Remnawave API "
+            f"для {telegram_id}: {type(e).__name__}: {e}"
+        )
+        raise
 
 
 

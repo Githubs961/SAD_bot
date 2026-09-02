@@ -73,7 +73,7 @@ def devices_keyboard(devices):
         if hwid:
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"❌ {device_model[:20]}",
+                    text=f"🗑 {device_model[:20]}",
                     callback_data=f"confirm_delete:{hwid}"
                 )
             ])

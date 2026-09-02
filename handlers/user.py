@@ -78,35 +78,64 @@ async def subscription_list(message: Message):
 
 @router.message(or_f(F.text == "🏡 Личный кабинет", Command("profile"))) #or Command(commands='profile')
 async def show_profile(message: Message):
-    # Отправляем сообщение-загрузку
-    # loading_msg = await message.answer("⏳ Загружаю данные вашего профиля...")
+    telegram_id = str(message.from_user.id)
 
-    user = await get_user(str(message.from_user.id))
-    # если пользователь найден
-    if user:
-        await init_traffic(message.from_user.id)
-        traffic = get_user_traffic(message.from_user.id)
+    try:
+        user = await get_user(telegram_id)
 
-        # ✅ Проверка на None
-        if traffic and traffic["used_bytes"] is not None:
-            used_gb = round(traffic["used_bytes"] / 1024 ** 3, 2)
-            limit_gb = round(traffic["traffic_limit"] / 1024 ** 3, 2)
-        else:
-            used_gb = 0
-            limit_gb = 0
-        await message.answer(text= f"🆔 <b>ID:</b> {user['username']}\n\n"
-                                   f"⚠️<b>Статус подписки:</b> {user['status']}\n"
-                                   f" └  Действует до: {format_expire_date(user['expire_at'])}\n\n"
-                                   f"📊 <b>Трафик:</b>\n"
-                                   f" ├  Обычные локации - ♾️ GB\n"
-                                   f" └  LTE - {used_gb} / {limit_gb} GB\n\n"
-                                   f"📱 <b>Лимит устройств:</b> {user['hwid_device_limit']}\n\n",
-                             reply_markup=profile_keyboard(user['subscription_url']),
-                             disable_web_page_preview=True
-                         )
+    except Exception as e:
+        print(
+            f"[ERROR] Не удалось загрузить личный кабинет "
+            f"{telegram_id}: {type(e).__name__}: {e}"
+        )
+
+        await message.answer(
+            "⚠️ <b>Не удалось загрузить личный кабинет</b>\n\n"
+            "Сервис временно недоступен. "
+            "Попробуйте ещё раз через несколько минут или напишите в поддержку."
+        )
+        return
+
+    # Пользователь действительно отсутствует в Remnawave
     if not user:
-        await message.answer(text='❌ У вас нет действующей подписки\n '
-                                  '🔒 Получите доступ')
+        await message.answer(
+            "❌ <b>У вас нет действующей подписки</b>\n"
+            "🔒 Получите доступ"
+        )
+        return
+
+    # Дальше твой существующий код
+    await init_traffic(message.from_user.id)
+
+    traffic = get_user_traffic(message.from_user.id)
+
+    if traffic and traffic["used_bytes"] is not None:
+        used_gb = round(
+            traffic["used_bytes"] / 1024 ** 3,
+            2
+        )
+        limit_gb = round(
+            traffic["traffic_limit"] / 1024 ** 3,
+            2
+        )
+    else:
+        used_gb = 0
+        limit_gb = 0
+
+    await message.answer(
+        text=(
+            f"🆔 <b>ID:</b> {user['username']}\n\n"
+            f"⚠️ <b>Статус подписки:</b> {user['status']}\n"
+            f" └ Действует до: {format_expire_date(user['expire_at'])}\n\n"
+            f"📊 <b>Трафик:</b>\n"
+            f" ├ Обычные локации — ♾️ GB\n"
+            f" └ LTE — {used_gb} / {limit_gb} GB\n\n"
+            f"📱 <b>Лимит устройств:</b> "
+            f"{user['hwid_device_limit']}\n\n"
+        ),
+        reply_markup=profile_keyboard(user['subscription_url']),
+        disable_web_page_preview=True
+    )
 
 
 
