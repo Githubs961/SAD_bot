@@ -25,11 +25,12 @@ SQUAD_ID = "27577928-dd80-4491-b109-880cdc1ecb4f"
 
 # Сквады которые подключаются пользователю
 SQUADS : list = [
-          "31aaa6c2-fffa-4213-aa18-9deaeb5c1a97", # Британия UFO
-          "6002d566-a23d-40d4-82c7-624c2a7777b0", #Латвия
+          "31aaa6c2-fffa-4213-aa18-9deaeb5c1a97", # Финляндия U1
+          "6002d566-a23d-40d4-82c7-624c2a7777b0", #Default
           "ae22bca6-fe11-463c-bec3-8f0eca68140d",#Автовыбор
           "a431433a-cee8-47fc-bbb6-33c419331a94", #Нидерланды  Германия Xorek
-          "27577928-dd80-4491-b109-880cdc1ecb4f"] #Финляндия U1 Обход
+          "27577928-dd80-4491-b109-880cdc1ecb4f", #LTE
+          "9a6ff00b-eb24-4444-abdd-2e969d8241ef"] #SERVHOST Латвия
 
 
 LEXICON_COMMANDS: dict[str, str] = {
