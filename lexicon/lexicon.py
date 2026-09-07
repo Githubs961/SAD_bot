@@ -30,7 +30,8 @@ SQUADS : list = [
           "ae22bca6-fe11-463c-bec3-8f0eca68140d",#Автовыбор
           "a431433a-cee8-47fc-bbb6-33c419331a94", #Нидерланды  Германия Xorek
           "27577928-dd80-4491-b109-880cdc1ecb4f", #LTE
-          "9a6ff00b-eb24-4444-abdd-2e969d8241ef"] #SERVHOST Латвия
+          "9a6ff00b-eb24-4444-abdd-2e969d8241ef", #SERVHOST Латвия
+          "903b1447-2b8a-4103-be33-daeee9cb6809"] #Akenai italy
 
 
 LEXICON_COMMANDS: dict[str, str] = {
