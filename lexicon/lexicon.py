@@ -20,7 +20,10 @@ TTL_SECONDS = 300 # 5 минут
 
 
 # id НОДЫ и id СКВАДЫ для подсчета трафика LTE
-LTE_NODE_UUID = ["a6379337-64fd-4699-91b6-bef0c1e68402","a2fcefb8-ee25-484a-8fb9-89ef8f1145ec"]
+LTE_NODE_UUID = ["a6379337-64fd-4699-91b6-bef0c1e68402",  #xorek fin
+                 "a2fcefb8-ee25-484a-8fb9-89ef8f1145ec",  #xorek ger
+                 "f4984d2b-c77d-4da5-8b0e-baea0d6a0fea"]  # servhost neth
+
 SQUAD_ID = "27577928-dd80-4491-b109-880cdc1ecb4f"
 
 # Сквады которые подключаются пользователю
